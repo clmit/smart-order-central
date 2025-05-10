@@ -1,10 +1,12 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export function CreateOrder() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleOrder = async () => {
@@ -32,6 +34,7 @@ export function CreateOrder() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY || ''}`
           },
           body: JSON.stringify(orderData),
         });
@@ -58,6 +61,8 @@ export function CreateOrder() {
           variant: 'destructive',
         });
         navigate('/orders');
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -69,6 +74,11 @@ export function CreateOrder() {
       <div className="text-center">
         <h2 className="text-xl font-medium mb-2">Создание заказа...</h2>
         <p className="text-muted-foreground">Пожалуйста, подождите</p>
+        {isLoading && (
+          <div className="mt-4 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
       </div>
     </div>
   );

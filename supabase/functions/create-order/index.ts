@@ -80,7 +80,7 @@ serve(async (req) => {
     
     // Calculate total amount
     const totalAmount = requestData.items.reduce(
-      (sum: number, item: any) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
+      (sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
       0
     )
     
@@ -106,7 +106,7 @@ serve(async (req) => {
     }
     
     // Create order items
-    const orderItems = requestData.items.map((item: any) => ({
+    const orderItems = requestData.items.map((item) => ({
       order_id: order.id,
       name: item.name,
       description: item.description || null,
@@ -115,7 +115,7 @@ serve(async (req) => {
       photo_url: item.photoUrl || null
     }))
     
-    const { data: items, error: itemsError } = await supabase
+    const { data: orderItemsData, error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems)
       .select()
@@ -159,7 +159,7 @@ serve(async (req) => {
       date: order.date,
       source: order.source,
       status: order.status,
-      items: items.map((item) => ({
+      items: orderItemsData.map((item) => ({
         id: item.id,
         name: item.name,
         description: item.description,
