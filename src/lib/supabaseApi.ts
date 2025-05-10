@@ -498,15 +498,21 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
       0
     );
     
+    // Create a customer object that matches the Customer type
+    // The createOrder function will handle the actual customer creation if needed
+    const customerData: Omit<Customer, 'id' | 'createdAt'> = {
+      name: customerName,
+      phone: customerPhone,
+      address: customerAddress || "",
+      email: customerEmail,
+      totalOrders: 0,
+      totalSpent: 0
+    };
+    
     // Format for the API
-    const formattedData = {
-      customerId,
-      customer: {
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress || "",
-        email: customerEmail
-      },
+    const formattedData: Omit<Order, 'id'> = {
+      customerId: customerId || "", // Will be replaced by createOrder if empty
+      customer: customerData,
       items: items.map((item: any) => ({
         name: item.name,
         description: item.description || "",
@@ -517,7 +523,7 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
       date: new Date().toISOString(),
       source: source || "other",
       status: "new",
-      totalAmount: totalAmount // Add the missing totalAmount property
+      totalAmount: totalAmount
     };
     
     // Call the create order method
