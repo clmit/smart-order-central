@@ -15,6 +15,31 @@ export function Settings() {
     });
   };
 
+  const handleTestAPI = () => {
+    // Тестовые данные для создания заказа
+    const testData = {
+      customerName: "Тестовый Клиент",
+      customerPhone: "+7 (999) 123-4567",
+      customerAddress: "Тестовый адрес",
+      customerEmail: "test@example.com",
+      source: "other",
+      items: [
+        {
+          name: "Тестовый товар",
+          description: "Описание товара",
+          price: 1000,
+          quantity: 1
+        }
+      ]
+    };
+    
+    // Кодируем данные для передачи через URL
+    const encodedData = encodeURIComponent(JSON.stringify(testData));
+    
+    // Открываем страницу создания заказа с тестовыми данными
+    window.location.href = `${apiBaseUrl}/api/orders/create?data=${encodedData}`;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -52,7 +77,7 @@ export function Settings() {
               
               <div className="space-y-2">
                 <p className="font-medium">Метод</p>
-                <p className="bg-muted p-2 rounded-md">POST</p>
+                <p className="bg-muted p-2 rounded-md">GET (с параметром data)</p>
               </div>
 
               <div className="space-y-2">
@@ -77,7 +102,7 @@ export function Settings() {
                 </pre>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="font-medium">Пример ответа</p>
                 <pre className="bg-muted p-2 rounded-md text-sm whitespace-pre-wrap">
                   {`{
@@ -114,32 +139,36 @@ export function Settings() {
               <div className="space-y-2">
                 <p className="font-medium">Пример кода (fetch)</p>
                 <pre className="bg-muted p-2 rounded-md text-sm whitespace-pre-wrap">
-                  {`fetch("${apiBaseUrl}/api/orders/create", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    customerName: "Имя клиента",
-    customerPhone: "+7 (XXX) XXX-XXXX",
-    customerAddress: "Адрес доставки",
-    customerEmail: "email@example.com",
-    source: "website",
-    items: [
-      {
-        name: "Название товара",
-        description: "Описание товара",
-        price: 1000,
-        quantity: 1,
-        photoUrl: "https://example.com/photo.jpg"
-      }
-    ]
-  })
-})
-.then(response => response.json())
-.then(data => console.log(data))
-.catch(error => console.error("Error:", error));`}
+                  {`// Создаем объект с данными заказа
+const orderData = {
+  customerName: "Имя клиента",
+  customerPhone: "+7 (XXX) XXX-XXXX",
+  customerAddress: "Адрес доставки",
+  customerEmail: "email@example.com",
+  source: "website",
+  items: [
+    {
+      name: "Название товара",
+      description: "Описание товара",
+      price: 1000,
+      quantity: 1,
+      photoUrl: "https://example.com/photo.jpg"
+    }
+  ]
+};
+
+// Кодируем данные для передачи через URL
+const encodedData = encodeURIComponent(JSON.stringify(orderData));
+
+// Перенаправляем пользователя на страницу создания заказа
+window.location.href = "${apiBaseUrl}/api/orders/create?data=" + encodedData;`}
                 </pre>
+              </div>
+              
+              <div className="mt-4">
+                <Button onClick={handleTestAPI}>
+                  Протестировать API (создать тестовый заказ)
+                </Button>
               </div>
             </CardContent>
           </Card>

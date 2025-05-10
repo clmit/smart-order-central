@@ -498,8 +498,7 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
       0
     );
     
-    // The createOrder function expects a customer with id and createdAt properties
-    // but will handle situations where these aren't provided when customer creation is needed
+    // Create the formatted data with all required fields for the Order type
     const formattedData: Omit<Order, 'id'> = {
       customerId: customerId || "", // Will be replaced by createOrder if empty
       customer: {
@@ -508,11 +507,12 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
         phone: customerPhone,
         address: customerAddress || "",
         email: customerEmail,
-        createdAt: "", // This will be replaced by createOrder
+        createdAt: new Date().toISOString(), // Временная дата создания
         totalOrders: 0,
         totalSpent: 0
       },
       items: items.map((item: any) => ({
+        id: "", // Будет заменено при создании
         name: item.name,
         description: item.description || "",
         price: Number(item.price) || 0,
@@ -526,7 +526,8 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
     };
     
     // Call the create order method
-    return await createOrder(formattedData);
+    const createdOrder = await createOrder(formattedData);
+    return createdOrder;
   } catch (error) {
     console.error("Error creating external order:", error);
     toast({
