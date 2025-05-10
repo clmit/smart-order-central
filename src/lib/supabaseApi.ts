@@ -498,21 +498,20 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
       0
     );
     
-    // Create a customer object that matches the Customer type
-    // The createOrder function will handle the actual customer creation if needed
-    const customerData: Omit<Customer, 'id' | 'createdAt'> = {
-      name: customerName,
-      phone: customerPhone,
-      address: customerAddress || "",
-      email: customerEmail,
-      totalOrders: 0,
-      totalSpent: 0
-    };
-    
-    // Format for the API
+    // The createOrder function expects a customer with id and createdAt properties
+    // but will handle situations where these aren't provided when customer creation is needed
     const formattedData: Omit<Order, 'id'> = {
       customerId: customerId || "", // Will be replaced by createOrder if empty
-      customer: customerData,
+      customer: {
+        id: "", // This will be replaced by createOrder
+        name: customerName,
+        phone: customerPhone,
+        address: customerAddress || "",
+        email: customerEmail,
+        createdAt: "", // This will be replaced by createOrder
+        totalOrders: 0,
+        totalSpent: 0
+      },
       items: items.map((item: any) => ({
         name: item.name,
         description: item.description || "",
