@@ -9,7 +9,112 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string
+          total_orders: number
+          total_spent: number
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+          total_orders?: number
+          total_spent?: number
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          total_orders?: number
+          total_spent?: number
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          description: string | null
+          id: string
+          name: string
+          order_id: string
+          photo_url: string | null
+          price: number
+          quantity: number
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          name: string
+          order_id: string
+          photo_url?: string | null
+          price: number
+          quantity?: number
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          name?: string
+          order_id?: string
+          photo_url?: string | null
+          price?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          customer_id: string
+          date: string
+          id: string
+          source: string
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          customer_id: string
+          date?: string
+          id?: string
+          source: string
+          status: string
+          total_amount?: number
+        }
+        Update: {
+          customer_id?: string
+          date?: string
+          id?: string
+          source?: string
+          status?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
