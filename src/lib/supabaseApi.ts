@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, Order, OrderItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -493,6 +492,12 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
   const { customerId, customerName, customerPhone, customerAddress, customerEmail, items, source } = data;
   
   try {
+    // Calculate the total amount from the items
+    const totalAmount = items.reduce(
+      (sum: number, item: any) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
+      0
+    );
+    
     // Format for the API
     const formattedData = {
       customerId,
@@ -511,7 +516,8 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
       })),
       date: new Date().toISOString(),
       source: source || "other",
-      status: "new"
+      status: "new",
+      totalAmount: totalAmount // Add the missing totalAmount property
     };
     
     // Call the create order method
