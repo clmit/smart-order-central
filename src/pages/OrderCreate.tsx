@@ -77,26 +77,29 @@ export function OrderCreate() {
       // Calculate the total amount
       const totalAmount = calculateTotal();
       
-      // When sending to createOrder, we need to pass the customer without the required fields
-      // that will be set by the API. We'll let the createOrder function handle this correctly.
+      // Create the order data according to the type expected by createOrder
       const orderData = {
+        customerId: '', // Will be assigned or resolved by the API
+        date: new Date().toISOString(),
+        source: orderSource,
+        status: 'new' as const,
+        totalAmount: totalAmount,
         items: items.map(item => ({
-          id: '', // Add empty id for TypeScript - will be generated server-side
+          id: '', // Will be generated server-side
           name: item.name,
           description: item.description,
           price: Number(item.price),
           quantity: Number(item.quantity),
         })),
-        date: new Date().toISOString(),
-        source: orderSource,
-        status: 'new',
-        customerId: '', // Will be assigned by the API
-        totalAmount: totalAmount,
         customer: {
+          id: '', // This will be assigned by createOrder
           name: customerName,
           phone: customerPhone,
           email: customerEmail || undefined,
           address: customerAddress,
+          createdAt: new Date().toISOString(), // Placeholder, will be set by API
+          totalOrders: 0, // Placeholder, will be updated by API
+          totalSpent: 0  // Placeholder, will be updated by API
         }
       };
 
