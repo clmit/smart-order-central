@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,6 +73,9 @@ export function OrderCreate() {
     setIsLoading(true);
 
     try {
+      // Calculate the total amount
+      const totalAmount = calculateTotal();
+      
       const orderData = {
         customer: {
           name: customerName,
@@ -91,6 +93,7 @@ export function OrderCreate() {
         source: orderSource,
         status: 'new',
         customerId: '', // Will be assigned by the API
+        totalAmount: totalAmount, // Add the missing totalAmount property
       };
 
       const createdOrder = await createOrder(orderData);
