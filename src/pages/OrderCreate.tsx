@@ -84,6 +84,7 @@ export function OrderCreate() {
           address: customerAddress,
         },
         items: items.map(item => ({
+          id: '', // Add empty id for TypeScript - will be generated server-side
           name: item.name,
           description: item.description,
           price: Number(item.price),
@@ -93,10 +94,14 @@ export function OrderCreate() {
         source: orderSource,
         status: 'new',
         customerId: '', // Will be assigned by the API
-        totalAmount: totalAmount, // Add the missing totalAmount property
+        totalAmount: totalAmount, // Add the totalAmount property
       };
 
       const createdOrder = await createOrder(orderData);
+      
+      if (!createdOrder || !createdOrder.id) {
+        throw new Error('Failed to create order - no order ID returned');
+      }
       
       toast({
         title: 'Заказ создан',
