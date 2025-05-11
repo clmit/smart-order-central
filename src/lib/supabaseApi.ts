@@ -307,10 +307,16 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
 
 export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> => {
   try {
-    // Check if customer exists, if not create a new one
+    // Check for customer information
     let customerId = orderData.customerId;
-    let customer = await getCustomerById(customerId);
+    let customer;
     
+    // Don't try to fetch customer with an empty ID
+    if (customerId && customerId.trim() !== '') {
+      customer = await getCustomerById(customerId);
+    }
+    
+    // If no valid customer ID or customer not found, check by phone
     if (!customer && orderData.customer) {
       // Check if a customer with the same phone exists
       const existingCustomer = await getCustomerByPhone(orderData.customer.phone);
