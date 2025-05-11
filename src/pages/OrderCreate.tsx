@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,13 +77,9 @@ export function OrderCreate() {
       // Calculate the total amount
       const totalAmount = calculateTotal();
       
+      // When sending to createOrder, we need to pass the customer without the required fields
+      // that will be set by the API. We'll let the createOrder function handle this correctly.
       const orderData = {
-        customer: {
-          name: customerName,
-          phone: customerPhone,
-          email: customerEmail || undefined,
-          address: customerAddress,
-        },
         items: items.map(item => ({
           id: '', // Add empty id for TypeScript - will be generated server-side
           name: item.name,
@@ -94,7 +91,13 @@ export function OrderCreate() {
         source: orderSource,
         status: 'new',
         customerId: '', // Will be assigned by the API
-        totalAmount: totalAmount, // Add the totalAmount property
+        totalAmount: totalAmount,
+        customer: {
+          name: customerName,
+          phone: customerPhone,
+          email: customerEmail || undefined,
+          address: customerAddress,
+        }
       };
 
       const createdOrder = await createOrder(orderData);
