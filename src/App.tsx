@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
+import OrderCreate from "./pages/OrderCreate";
 import Customers from "./pages/Customers";
 import Statistics from "./pages/Statistics";
 import Messaging from "./pages/Messaging";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Layout><Index /></Layout>} />
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/orders" element={<Layout><Orders /></Layout>} />
+          <Route path="/orders/new" element={<Layout><OrderCreate /></Layout>} />
           <Route path="/orders/:id" element={<Layout><OrderDetail /></Layout>} />
           <Route path="/customers" element={<Layout><Customers /></Layout>} />
           <Route path="/statistics" element={<Layout><Statistics /></Layout>} />
