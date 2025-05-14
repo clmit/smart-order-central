@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createOrder } from '@/lib/supabaseApi';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { Plus, Minus, Loader2 } from 'lucide-react';
 import { OrderSource } from '@/types';
 
@@ -74,39 +73,37 @@ export function OrderCreate() {
     setIsLoading(true);
 
     try {
-      // Calculate the total amount
-      const totalAmount = calculateTotal();
-      
-      // Create the order data according to the type expected by createOrder
+      // Подготовка данных для создания заказа
       const orderData = {
-        customerId: '', // Will be assigned or resolved by the API
+        customerId: '', // Будет назначено серверной частью
         date: new Date().toISOString(),
         source: orderSource,
         status: 'new' as const,
-        totalAmount: totalAmount,
+        totalAmount: calculateTotal(),
         items: items.map(item => ({
-          id: '', // Will be generated server-side
+          id: '', // Будет назначено серверной частью
           name: item.name,
           description: item.description,
           price: Number(item.price),
           quantity: Number(item.quantity),
         })),
         customer: {
-          id: '', // This will be assigned by createOrder
+          id: '', // Будет назначено серверной частью
           name: customerName,
           phone: customerPhone,
           email: customerEmail || undefined,
-          address: customerAddress,
-          createdAt: new Date().toISOString(), // Placeholder, will be set by API
-          totalOrders: 0, // Placeholder, will be updated by API
-          totalSpent: 0  // Placeholder, will be updated by API
+          address: customerAddress || '',
+          createdAt: new Date().toISOString(), // Это поле будет заменено серверной частью
+          totalOrders: 0, // Будет обновлено серверной частью
+          totalSpent: 0  // Будет обновлено серверной частью
         }
       };
 
+      console.log('Submitting order data:', orderData);
       const createdOrder = await createOrder(orderData);
       
       if (!createdOrder || !createdOrder.id) {
-        throw new Error('Failed to create order - no order ID returned');
+        throw new Error('Не удалось создать заказ - ID заказа не возвращен');
       }
       
       toast({
@@ -119,7 +116,7 @@ export function OrderCreate() {
       console.error('Error creating order:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
+        description: error.message || 'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
         variant: 'destructive',
       });
     } finally {

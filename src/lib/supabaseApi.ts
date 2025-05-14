@@ -330,12 +330,16 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
         const newCustomer = await createCustomer({
           name: orderData.customer.name,
           phone: orderData.customer.phone,
-          address: orderData.customer.address,
+          address: orderData.customer.address || '',
           email: orderData.customer.email
         });
         customerId = newCustomer.id;
         customer = newCustomer;
       }
+    }
+    
+    if (!customerId) {
+      throw new Error('Не удалось определить ID клиента');
     }
     
     // Calculate total amount
@@ -349,9 +353,9 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
       .from('orders')
       .insert({
         customer_id: customerId,
-        date: orderData.date,
-        source: orderData.source,
-        status: orderData.status,
+        date: orderData.date || new Date().toISOString(),
+        source: orderData.source || 'other',
+        status: orderData.status || 'new',
         total_amount: totalAmount
       })
       .select()
@@ -363,10 +367,10 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
     const orderItems = orderData.items.map(item => ({
       order_id: newOrder.id,
       name: item.name,
-      description: item.description,
+      description: item.description || null,
       price: item.price,
       quantity: item.quantity,
-      photo_url: item.photoUrl
+      photo_url: item.photoUrl || null
     }));
     
     const { data: items, error: itemsError } = await supabase
@@ -406,7 +410,7 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
     console.error('Error creating order:', error);
     toast({
       title: 'Ошибка',
-      description: 'Не удалось создать заказ',
+      description: 'Не удалось создать заказ: ' + error.message,
       variant: 'destructive',
     });
     throw error;
@@ -498,6 +502,10 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
   const { customerId, customerName, customerPhone, customerAddress, customerEmail, items, source } = data;
   
   try {
+    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
+      throw new Error('Отсутствуют обязательные поля');
+    }
+    
     // Calculate the total amount from the items
     const totalAmount = items.reduce(
       (sum: number, item: any) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
@@ -513,12 +521,12 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
         phone: customerPhone,
         address: customerAddress || "",
         email: customerEmail,
-        createdAt: new Date().toISOString(), // Временная дата создания
+        createdAt: new Date().toISOString(),
         totalOrders: 0,
         totalSpent: 0
       },
       items: items.map((item: any) => ({
-        id: "", // Будет заменено при создании
+        id: "", // Will be replaced when created
         name: item.name,
         description: item.description || "",
         price: Number(item.price) || 0,
@@ -538,7 +546,7 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
     console.error("Error creating external order:", error);
     toast({
       title: 'Ошибка',
-      description: 'Не удалось обработать внешний заказ',
+      description: 'Не удалось обработать внешний заказ: ' + error.message,
       variant: 'destructive',
     });
     throw error;
