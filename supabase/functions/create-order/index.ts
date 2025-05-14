@@ -22,6 +22,7 @@ serve(async (req) => {
     }
     
     const requestData = await req.json()
+    console.log('Received request data:', JSON.stringify(requestData, null, 2))
     
     // Validate required fields
     const { customerName, customerPhone, items } = requestData
@@ -170,6 +171,7 @@ serve(async (req) => {
       totalAmount: Number(order.total_amount)
     }
     
+    console.log('Successfully created order:', order.id)
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

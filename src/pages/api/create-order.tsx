@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 export function CreateOrder() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleOrder = async () => {
@@ -27,24 +28,34 @@ export function CreateOrder() {
         }
         
         // Пытаемся декодировать данные
-        const orderData = JSON.parse(decodeURIComponent(params.get('data') || '{}'));
+        const encodedData = params.get('data') || '';
+        console.log('Encoded data:', encodedData);
+        
+        const orderData = JSON.parse(decodeURIComponent(encodedData));
+        console.log('Decoded order data:', orderData);
         
         // Отправляем запрос к Supabase Edge Function
         const response = await fetch(`https://dzuyeaqwdkpegosfhooz.functions.supabase.co/create-order`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY || ''}`
+            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6dXllYXF3ZGtwZWdvc2Zob296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MzYxNjEsImV4cCI6MjA2MjQxMjE2MX0.ZWjpNN7kVc7d8D8H4hSYyHlKu2TRSXEK9L172mX49Bg'}`
           },
           body: JSON.stringify(orderData),
         });
         
         if (!response.ok) {
           const errorData = await response.json();
+          console.error('Error response:', errorData);
           throw new Error(errorData.error || 'Ошибка при создании заказа');
         }
         
         const createdOrder = await response.json();
+        console.log('Created order:', createdOrder);
+        
+        if (!createdOrder || !createdOrder.id) {
+          throw new Error('Заказ не найден в ответе сервера');
+        }
         
         toast({
           title: 'Успешно',
@@ -55,6 +66,7 @@ export function CreateOrder() {
         navigate(`/orders/${createdOrder.id}`);
       } catch (error) {
         console.error('Error creating order:', error);
+        setError(error instanceof Error ? error.message : 'Не удалось создать заказ');
         toast({
           title: 'Ошибка',
           description: error instanceof Error ? error.message : 'Не удалось создать заказ',
@@ -77,6 +89,11 @@ export function CreateOrder() {
         {isLoading && (
           <div className="mt-4 flex justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        {error && (
+          <div className="mt-4 text-red-500">
+            {error}
           </div>
         )}
       </div>

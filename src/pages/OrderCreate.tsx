@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { createOrder } from '@/lib/supabaseApi';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { OrderSource } from '@/types';
@@ -67,53 +66,36 @@ export function OrderCreate() {
     setIsLoading(true);
 
     try {
-      // Подготовка данных для создания заказа
+      // Подготовка данных для Edge Function
       const orderData = {
-        customerId: '', // Будет назначено серверной частью
-        date: new Date().toISOString(),
+        customerName, 
+        customerPhone,
+        customerEmail: customerEmail || null,
+        customerAddress: customerAddress || '',
         source: orderSource,
-        status: 'new' as const,
-        totalAmount: calculateTotal(),
         items: items.map(item => ({
-          id: '', // Будет назначено серверной частью
           name: item.name,
-          description: item.description,
+          description: item.description || '',
           price: Number(item.price),
           quantity: Number(item.quantity),
-        })),
-        customer: {
-          id: '', // Будет назначено серверной частью
-          name: customerName,
-          phone: customerPhone,
-          email: customerEmail || undefined,
-          address: customerAddress || '',
-          createdAt: new Date().toISOString(), // Это поле будет заменено серверной частью
-          totalOrders: 0, // Будет обновлено серверной частью
-          totalSpent: 0  // Будет обновлено серверной частью
-        }
+          photoUrl: null
+        }))
       };
 
-      console.log('Submitting order data:', orderData);
-      const createdOrder = await createOrder(orderData);
+      console.log('Preparing order data:', orderData);
       
-      if (!createdOrder || !createdOrder.id) {
-        throw new Error('Не удалось создать заказ - ID заказа не возвращен');
-      }
+      // Encoding the data for URL parameters
+      const encodedData = encodeURIComponent(JSON.stringify(orderData));
       
-      toast({
-        title: 'Заказ создан',
-        description: `Номер заказа: #${createdOrder.id.substring(0, 6)}`,
-      });
-      
-      navigate(`/orders/${createdOrder.id}`);
+      // Redirect to the create-order page with data
+      navigate(`/api/create-order?data=${encodedData}`);
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error preparing order:', error);
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
+        description: error instanceof Error ? error.message : 'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
     }
   };
