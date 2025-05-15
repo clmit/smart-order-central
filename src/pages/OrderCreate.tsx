@@ -92,47 +92,23 @@ export function OrderCreate() {
 
       console.log('Preparing order data:', orderData);
       
-      // Преобразуем в строку JSON - избегаем null значений
+      // Отправляем данные напрямую через URL без кодирования
+      // Преобразуем в строку JSON
       const jsonString = JSON.stringify(orderData);
       console.log('JSON string length:', jsonString.length);
       console.log('JSON string:', jsonString);
       
-      // Проверяем валидность JSON
+      // Проверка того, что мы можем успешно парсить наш JSON обратно
       try {
-        // Тестовое парсирование, чтобы убедиться что JSON валиден
         JSON.parse(jsonString);
-      } catch (jsonError) {
-        console.error('Invalid JSON:', jsonError);
-        throw new Error('Ошибка в формате данных заказа: ' + jsonError.message);
+      } catch (error) {
+        console.error('Invalid JSON:', error);
+        throw new Error('Ошибка в формате данных заказа');
       }
-      
-      // Кодируем для URL 
-      const encodedData = encodeURIComponent(jsonString);
-      console.log('Encoded data length:', encodedData.length);
-      console.log('Encoded data:', encodedData);
-      
-      // Проверяем, что данные закодированы корректно
-      if (!encodedData) {
-        throw new Error('Ошибка при кодировании данных заказа');
-      }
-      
-      // Убедимся, что данные не превышают лимит URL
-      if (encodedData.length > 2000) {
-        throw new Error('Данные заказа слишком велики для передачи через URL');
-      }
-      
-      // Проверяем перед отправкой, что данные могут быть корректно декодированы
-      try {
-        const testDecode = decodeURIComponent(encodedData);
-        console.log('Test decode successful:', testDecode.substring(0, 50) + '...');
-      } catch (decodeError) {
-        console.error('Test decode failed:', decodeError);
-        throw new Error('Ошибка при тестовом декодировании данных заказа');
-      }
-      
-      // После всех проверок перенаправляем на страницу создания заказа
-      console.log('Navigating to:', `/api/create-order?data=${encodedData.substring(0, 50)}...`);
-      navigate(`/api/create-order?data=${encodedData}`);
+
+      // Перенаправляем на страницу создания заказа с данными
+      console.log('Navigating to create order with data');
+      navigate(`/api/create-order?data=${jsonString}`);
     } catch (error) {
       console.error('Error preparing order:', error);
       toast({

@@ -31,33 +31,38 @@ export function CreateOrder() {
         const encodedData = params.get('data') || '';
         console.log('Encoded data from URL:', encodedData);
         
-        // Тщательная проверка данных
-        if (!encodedData) {
-          throw new Error('Пустые данные заказа (null или undefined)');
-        }
-        
-        if (encodedData.trim() === '') {
-          throw new Error('Пустые данные заказа (пустая строка)');
-        }
-        
-        // Декодируем данные
-        let decodedString;
+        // Определяем, является ли данные уже JSON объектом (не закодированным)
         let orderData;
         
-        try {
-          decodedString = decodeURIComponent(encodedData);
-          console.log('Decoded string:', decodedString);
-          
-          if (!decodedString || decodedString.trim() === '') {
-            throw new Error('Декодированная строка пуста');
+        // Проверяем, начинаются ли данные с { - признак JSON
+        if (encodedData.trim().startsWith('{')) {
+          console.log('Data appears to be JSON already, parsing directly');
+          try {
+            orderData = JSON.parse(encodedData);
+          } catch (parseError) {
+            console.error('Failed to parse data as direct JSON:', parseError);
+            // Продолжим с декодированием, если прямой парсинг не удался
           }
-          
-          orderData = JSON.parse(decodedString);
-          console.log('Parsed order data:', orderData);
-        } catch (decodeError) {
-          console.error('Error decoding order data:', decodeError);
-          throw new Error(`Ошибка при декодировании данных заказа: ${decodeError.message}`);
         }
+        
+        // Если данные еще не распарсены, пробуем декодировать
+        if (!orderData) {
+          try {
+            const decodedString = decodeURIComponent(encodedData);
+            console.log('Decoded string:', decodedString);
+            
+            if (!decodedString || decodedString.trim() === '') {
+              throw new Error('Декодированная строка пуста');
+            }
+            
+            orderData = JSON.parse(decodedString);
+          } catch (decodeError) {
+            console.error('Error decoding order data:', decodeError);
+            throw new Error(`Ошибка при декодировании данных заказа: ${decodeError.message}`);
+          }
+        }
+        
+        console.log('Parsed order data:', orderData);
         
         // Проверяем структуру данных более детально
         if (!orderData) {
