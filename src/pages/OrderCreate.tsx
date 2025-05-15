@@ -42,16 +42,14 @@ export function OrderCreate() {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const validateData = () => {
     if (!customerName || !customerPhone) {
       toast({
         title: 'Ошибка',
         description: 'Имя и телефон клиента обязательны',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     if (items.some(item => !item.name || item.price <= 0)) {
@@ -60,6 +58,16 @@ export function OrderCreate() {
         description: 'Все товары должны иметь название и цену',
         variant: 'destructive',
       });
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateData()) {
       return;
     }
 
@@ -86,6 +94,7 @@ export function OrderCreate() {
       
       // Encoding the data for URL parameters
       const encodedData = encodeURIComponent(JSON.stringify(orderData));
+      console.log('Encoded data length:', encodedData.length);
       
       // Redirect to the create-order page with data
       navigate(`/api/create-order?data=${encodedData}`);

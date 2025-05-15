@@ -31,8 +31,19 @@ export function CreateOrder() {
         const encodedData = params.get('data') || '';
         console.log('Encoded data:', encodedData);
         
-        const orderData = JSON.parse(decodeURIComponent(encodedData));
-        console.log('Decoded order data:', orderData);
+        let orderData;
+        try {
+          orderData = JSON.parse(decodeURIComponent(encodedData));
+          console.log('Decoded order data:', orderData);
+        } catch (decodeError) {
+          console.error('Error decoding order data:', decodeError);
+          throw new Error('Ошибка при декодировании данных заказа');
+        }
+        
+        // Проверяем структуру данных
+        if (!orderData || !orderData.customerName || !orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+          throw new Error('Неполные данные для создания заказа');
+        }
         
         // Используем статический ключ для Supabase вместо process.env
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6dXllYXF3ZGtwZWdvc2Zob296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MzYxNjEsImV4cCI6MjA2MjQxMjE2MX0.ZWjpNN7kVc7d8D8H4hSYyHlKu2TRSXEK9L172mX49Bg';
