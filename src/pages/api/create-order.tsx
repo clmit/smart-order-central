@@ -27,19 +27,21 @@ export function CreateOrder() {
           return;
         }
         
-        // Пытаемся декодировать данные
+        // Получаем закодированные данные
         const encodedData = params.get('data') || '';
-        console.log('Encoded data:', encodedData);
+        console.log('Encoded data from URL:', encodedData);
         
+        if (!encodedData || encodedData.trim() === '') {
+          throw new Error('Пустые данные заказа');
+        }
+        
+        // Декодируем данные
         let orderData;
         try {
-          // Проверим значение на null или undefined, а также на пустую строку
-          if (!encodedData || encodedData.trim() === '') {
-            throw new Error('Пустые данные заказа');
-          }
-          
-          orderData = JSON.parse(decodeURIComponent(encodedData));
-          console.log('Decoded order data:', orderData);
+          const decodedString = decodeURIComponent(encodedData);
+          console.log('Decoded string:', decodedString);
+          orderData = JSON.parse(decodedString);
+          console.log('Parsed order data:', orderData);
         } catch (decodeError) {
           console.error('Error decoding order data:', decodeError);
           throw new Error('Ошибка при декодировании данных заказа');

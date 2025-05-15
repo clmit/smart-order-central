@@ -92,15 +92,20 @@ export function OrderCreate() {
 
       console.log('Preparing order data:', orderData);
       
-      // Encoding the data for URL parameters - сначала преобразуем в строку
+      // Преобразуем в строку JSON
       const jsonString = JSON.stringify(orderData);
       console.log('JSON string length:', jsonString.length);
       console.log('JSON string:', jsonString);
       
-      // Затем кодируем для URL
+      // Кодируем для URL
       const encodedData = encodeURIComponent(jsonString);
       console.log('Encoded data length:', encodedData.length);
-      console.log('Encoded data:', jsonString); // Отправляем незакодированные данные для отладки
+      console.log('Encoded data:', encodedData); // Исправлено: выводим закодированные данные
+      
+      // Убедимся, что данные не превышают лимит URL
+      if (encodedData.length > 2000) {
+        throw new Error('Данные заказа слишком велики для передачи через URL');
+      }
       
       // Redirect to the create-order page with data
       navigate(`/api/create-order?data=${encodedData}`);
