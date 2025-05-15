@@ -10,6 +10,7 @@ serve(async (req) => {
   }
   
   try {
+    console.log('Edge function: create-order started')
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://dzuyeaqwdkpegosfhooz.supabase.co'
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -21,14 +22,27 @@ serve(async (req) => {
       })
     }
     
-    const requestData = await req.json()
-    console.log('Received request data:', JSON.stringify(requestData, null, 2))
+    const requestText = await req.text()
+    console.log('Received raw request data:', requestText)
+    
+    let requestData
+    try {
+      requestData = JSON.parse(requestText)
+    } catch (parseError) {
+      console.error('Error parsing request data:', parseError)
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body', details: parseError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    console.log('Parsed request data:', JSON.stringify(requestData, null, 2))
     
     // Validate required fields
     const { customerName, customerPhone, items } = requestData
     
     if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+      return new Response(JSON.stringify({ error: 'Missing required fields', data: requestData }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -43,7 +57,7 @@ serve(async (req) => {
     
     if (customerError) {
       console.error('Error fetching customer:', customerError)
-      return new Response(JSON.stringify({ error: 'Failed to check existing customer' }), {
+      return new Response(JSON.stringify({ error: 'Failed to check existing customer', details: customerError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -54,8 +68,10 @@ serve(async (req) => {
     if (existingCustomer) {
       // Use existing customer
       customerId = existingCustomer.id
+      console.log('Found existing customer:', customerId)
     } else {
       // Create a new customer
+      console.log('Creating new customer')
       const { data: newCustomer, error: createError } = await supabase
         .from('customers')
         .insert({
@@ -69,7 +85,7 @@ serve(async (req) => {
       
       if (createError) {
         console.error('Error creating customer:', createError)
-        return new Response(JSON.stringify({ error: 'Failed to create customer' }), {
+        return new Response(JSON.stringify({ error: 'Failed to create customer', details: createError.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -77,6 +93,7 @@ serve(async (req) => {
       
       customerId = newCustomer.id
       existingCustomer = newCustomer
+      console.log('Created new customer with ID:', customerId)
     }
     
     // Calculate total amount
@@ -84,8 +101,10 @@ serve(async (req) => {
       (sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
       0
     )
+    console.log('Calculated total amount:', totalAmount)
     
     // Create the order
+    console.log('Creating order')
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -100,11 +119,13 @@ serve(async (req) => {
     
     if (orderError) {
       console.error('Error creating order:', orderError)
-      return new Response(JSON.stringify({ error: 'Failed to create order' }), {
+      return new Response(JSON.stringify({ error: 'Failed to create order', details: orderError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+    
+    console.log('Order created:', order.id)
     
     // Create order items
     const orderItems = requestData.items.map((item) => ({
@@ -116,6 +137,7 @@ serve(async (req) => {
       photo_url: item.photoUrl || null
     }))
     
+    console.log('Creating order items:', orderItems.length)
     const { data: orderItemsData, error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems)
@@ -123,13 +145,14 @@ serve(async (req) => {
     
     if (itemsError) {
       console.error('Error creating order items:', itemsError)
-      return new Response(JSON.stringify({ error: 'Failed to create order items' }), {
+      return new Response(JSON.stringify({ error: 'Failed to create order items', details: itemsError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
     
     // Update customer metrics
+    console.log('Updating customer metrics')
     const { error: updateError } = await supabase
       .from('customers')
       .update({

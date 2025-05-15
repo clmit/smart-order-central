@@ -31,20 +31,32 @@ export function CreateOrder() {
         const encodedData = params.get('data') || '';
         console.log('Encoded data from URL:', encodedData);
         
-        if (!encodedData || encodedData.trim() === '') {
-          throw new Error('Пустые данные заказа');
+        // Тщательная проверка данных
+        if (!encodedData) {
+          throw new Error('Пустые данные заказа (null или undefined)');
+        }
+        
+        if (encodedData.trim() === '') {
+          throw new Error('Пустые данные заказа (пустая строка)');
         }
         
         // Декодируем данные
+        let decodedString;
         let orderData;
+        
         try {
-          const decodedString = decodeURIComponent(encodedData);
+          decodedString = decodeURIComponent(encodedData);
           console.log('Decoded string:', decodedString);
+          
+          if (!decodedString || decodedString.trim() === '') {
+            throw new Error('Декодированная строка пуста');
+          }
+          
           orderData = JSON.parse(decodedString);
           console.log('Parsed order data:', orderData);
         } catch (decodeError) {
           console.error('Error decoding order data:', decodeError);
-          throw new Error('Ошибка при декодировании данных заказа');
+          throw new Error(`Ошибка при декодировании данных заказа: ${decodeError.message}`);
         }
         
         // Проверяем структуру данных более детально
@@ -54,6 +66,10 @@ export function CreateOrder() {
         
         if (!orderData.customerName) {
           throw new Error('Отсутствует имя клиента в данных заказа');
+        }
+        
+        if (!orderData.customerPhone) {
+          throw new Error('Отсутствует телефон клиента в данных заказа');
         }
         
         if (!orderData.items) {
@@ -71,6 +87,8 @@ export function CreateOrder() {
         // Используем статический ключ для Supabase вместо process.env
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6dXllYXF3ZGtwZWdvc2Zob296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MzYxNjEsImV4cCI6MjA2MjQxMjE2MX0.ZWjpNN7kVc7d8D8H4hSYyHlKu2TRSXEK9L172mX49Bg';
         
+        console.log('About to send request to Supabase Edge Function');
+        
         // Отправляем запрос к Supabase Edge Function
         const response = await fetch(`https://dzuyeaqwdkpegosfhooz.functions.supabase.co/create-order`, {
           method: 'POST',
@@ -80,6 +98,8 @@ export function CreateOrder() {
           },
           body: JSON.stringify(orderData),
         });
+        
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
           const errorData = await response.json();
