@@ -33,6 +33,11 @@ export function CreateOrder() {
         
         let orderData;
         try {
+          // Проверим значение на null или undefined, а также на пустую строку
+          if (!encodedData || encodedData.trim() === '') {
+            throw new Error('Пустые данные заказа');
+          }
+          
           orderData = JSON.parse(decodeURIComponent(encodedData));
           console.log('Decoded order data:', orderData);
         } catch (decodeError) {
@@ -40,9 +45,25 @@ export function CreateOrder() {
           throw new Error('Ошибка при декодировании данных заказа');
         }
         
-        // Проверяем структуру данных
-        if (!orderData || !orderData.customerName || !orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
-          throw new Error('Неполные данные для создания заказа');
+        // Проверяем структуру данных более детально
+        if (!orderData) {
+          throw new Error('Данные заказа отсутствуют после декодирования');
+        }
+        
+        if (!orderData.customerName) {
+          throw new Error('Отсутствует имя клиента в данных заказа');
+        }
+        
+        if (!orderData.items) {
+          throw new Error('Отсутствуют товары в данных заказа');
+        }
+        
+        if (!Array.isArray(orderData.items)) {
+          throw new Error('Некорректный формат товаров в данных заказа');
+        }
+        
+        if (orderData.items.length === 0) {
+          throw new Error('Список товаров пуст в данных заказа');
         }
         
         // Используем статический ключ для Supabase вместо process.env

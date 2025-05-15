@@ -92,9 +92,15 @@ export function OrderCreate() {
 
       console.log('Preparing order data:', orderData);
       
-      // Encoding the data for URL parameters
-      const encodedData = encodeURIComponent(JSON.stringify(orderData));
+      // Encoding the data for URL parameters - сначала преобразуем в строку
+      const jsonString = JSON.stringify(orderData);
+      console.log('JSON string length:', jsonString.length);
+      console.log('JSON string:', jsonString);
+      
+      // Затем кодируем для URL
+      const encodedData = encodeURIComponent(jsonString);
       console.log('Encoded data length:', encodedData.length);
+      console.log('Encoded data:', jsonString); // Отправляем незакодированные данные для отладки
       
       // Redirect to the create-order page with data
       navigate(`/api/create-order?data=${encodedData}`);
