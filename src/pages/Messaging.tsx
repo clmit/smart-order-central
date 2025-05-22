@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
@@ -6,7 +5,8 @@ import {
   Send, 
   CheckCircle2,
   AlertCircle,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,16 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getCustomers, sendSms } from '@/lib/api';
 import { Customer } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function Messaging() {
   const { toast } = useToast();
@@ -37,6 +47,8 @@ export function Messaging() {
   const [filterValue, setFilterValue] = useState('3');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [sendingProgress, setSendingProgress] = useState({ current: 0, total: 0 });
   
   useEffect(() => {
     const loadCustomers = async () => {
@@ -88,6 +100,10 @@ export function Messaging() {
     }
   };
 
+  const handleConfirmSend = () => {
+    setShowConfirmDialog(true);
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim()) {
       toast({
@@ -108,6 +124,8 @@ export function Messaging() {
     }
 
     setIsSending(true);
+    setSendingProgress({ current: 0, total: selectedCustomers.length });
+    setShowConfirmDialog(false);
 
     try {
       const result = await sendSms(selectedCustomers, message);
@@ -130,6 +148,7 @@ export function Messaging() {
       });
     } finally {
       setIsSending(false);
+      setSendingProgress({ current: 0, total: 0 });
     }
   };
 
@@ -138,7 +157,7 @@ export function Messaging() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Рассылка</h1>
-          <p className="text-muted-foreground">Отправка SMS сообщений клиентам</p>
+          <p className="text-muted-foreground">Отправка SMS сообщений клиентам через SMS.ru</p>
         </div>
       </div>
 
@@ -208,19 +227,45 @@ export function Messaging() {
                 className="resize-none min-h-[120px]"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                disabled={isSending}
               />
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">
                   {message.length} / 160 символов
                 </span>
                 <Button 
-                  onClick={handleSendMessage} 
+                  onClick={handleConfirmSend} 
                   disabled={isSending || message.trim() === '' || selectedCustomers.length === 0}
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Отправить
+                  {isSending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Отправка...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Отправить
+                    </>
+                  )}
                 </Button>
               </div>
+              
+              {isSending && sendingProgress.total > 0 && (
+                <div className="mt-2">
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${(sendingProgress.current / sendingProgress.total) * 100}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-center mt-1 text-muted-foreground">
+                    Отправка {sendingProgress.current} из {sendingProgress.total}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -283,6 +328,25 @@ export function Messaging() {
           </Card>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтвердите отправку</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы собираетесь отправить SMS сообщение {selectedCustomers.length} получателям.
+              Это действие может повлечь за собой расходы на вашем аккаунте SMS.ru.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendMessage}>
+              Отправить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
