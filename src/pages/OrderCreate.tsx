@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { OrderSource } from '@/types';
 import CustomerInfoForm from '@/components/order/CustomerInfoForm';
 import OrderItemsSection from '@/components/order/OrderItemsSection';
+import { createOrder } from '@/lib/supabaseApi';
 
 export function OrderCreate() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export function OrderCreate() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateData()) {
@@ -74,48 +75,53 @@ export function OrderCreate() {
     setIsLoading(true);
 
     try {
-      // Подготовка данных для Edge Function
+      // Prepare order data
       const orderData = {
-        customerName, 
-        customerPhone,
-        customerEmail: customerEmail || undefined,
-        customerAddress: customerAddress || '',
+        customerId: '',
+        customer: {
+          id: '',
+          name: customerName,
+          phone: customerPhone,
+          address: customerAddress || '',
+          email: customerEmail || undefined,
+          createdAt: '',
+          totalOrders: 0,
+          totalSpent: 0
+        },
+        date: new Date().toISOString(),
         source: orderSource,
         items: items.map(item => ({
+          id: '',
           name: item.name,
           description: item.description || '',
           price: Number(item.price),
           quantity: Number(item.quantity),
-          photoUrl: null
-        }))
+          photoUrl: undefined
+        })),
+        status: 'new',
+        totalAmount: calculateTotal()
       };
 
-      console.log('Preparing order data:', orderData);
+      console.log('Creating order with data:', orderData);
       
-      // Отправляем данные напрямую через URL без кодирования
-      // Преобразуем в строку JSON
-      const jsonString = JSON.stringify(orderData);
-      console.log('JSON string length:', jsonString.length);
-      console.log('JSON string:', jsonString);
+      // Use the imported API function to create the order
+      const createdOrder = await createOrder(orderData);
       
-      // Проверка того, что мы можем успешно парсить наш JSON обратно
-      try {
-        JSON.parse(jsonString);
-      } catch (error) {
-        console.error('Invalid JSON:', error);
-        throw new Error('Ошибка в формате данных заказа');
-      }
-
-      // Перенаправляем на страницу создания заказа с данными
-      console.log('Navigating to create order with data');
-      navigate(`/api/create-order?data=${jsonString}`);
+      toast({
+        title: 'Успешно',
+        description: `Заказ #${createdOrder.id.substring(0, 6)} создан`,
+      });
+      
+      // Navigate to the order details page
+      navigate(`/orders/${createdOrder.id}`);
     } catch (error) {
-      console.error('Error preparing order:', error);
+      console.error('Error creating order:', error);
       toast({
         title: 'Ошибка',
         description: error instanceof Error ? error.message : 'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
         variant: 'destructive',
       });
+    } finally {
       setIsLoading(false);
     }
   };

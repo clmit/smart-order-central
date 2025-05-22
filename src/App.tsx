@@ -1,47 +1,40 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Layout } from "./components/Layout";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Orders from "./pages/Orders";
-import OrderDetail from "./pages/OrderDetail";
-import OrderCreate from "./pages/OrderCreate";
-import Customers from "./pages/Customers";
-import Statistics from "./pages/Statistics";
-import Messaging from "./pages/Messaging";
-import Settings from "./pages/Settings";
-import { CreateOrder } from "./pages/api/create-order";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-const queryClient = new QueryClient();
+import Layout from './components/Layout';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import Statistics from './pages/Statistics';
+import Customers from './pages/Customers';
+import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
+import OrderCreate from './pages/OrderCreate';
+import Messaging from './pages/Messaging';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Index /></Layout>} />
-          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/orders" element={<Layout><Orders /></Layout>} />
-          <Route path="/orders/new" element={<Layout><OrderCreate /></Layout>} />
-          <Route path="/orders/:id" element={<Layout><OrderDetail /></Layout>} />
-          <Route path="/customers" element={<Layout><Customers /></Layout>} />
-          <Route path="/statistics" element={<Layout><Statistics /></Layout>} />
-          <Route path="/messaging" element={<Layout><Messaging /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
-          <Route path="/api/create-order" element={<CreateOrder />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+// Remove the CreateOrder API route from the main application routes
+// as we'll now use the direct API approach
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Index />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="statistics" element={<Statistics />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="orders/:id" element={<OrderDetail />} />
+          <Route path="orders/new" element={<OrderCreate />} />
+          <Route path="messaging" element={<Messaging />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;
