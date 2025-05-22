@@ -4,19 +4,27 @@ import { ChartBar, Calendar, Users, CreditCard } from 'lucide-react';
 import MetricsCard from '@/components/charts/MetricsCard';
 import ChartCard from '@/components/charts/ChartCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getTodayMetrics, getYesterdayMetrics, getMonthlyMetrics, mockDailyMetrics, mockSourceMetrics, mockCustomerMetrics } from '@/lib/mockData';
 import { getOrders } from '@/lib/api';
 import { Order } from '@/types';
 
 export function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    today: { orders: 0, revenue: 0 },
+    yesterday: { orders: 0, revenue: 0 },
+    month: { orders: 0, revenue: 0 }
+  });
+  const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
+  const [sourceMetrics, setSourceMetrics] = useState<any[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
   
   useEffect(() => {
     const loadOrders = async () => {
       try {
         const data = await getOrders();
         setOrders(data);
+        calculateMetrics(data);
       } catch (error) {
         console.error('Failed to load orders:', error);
       } finally {
@@ -27,17 +35,124 @@ export function Dashboard() {
     loadOrders();
   }, []);
   
-  const todayMetrics = getTodayMetrics();
-  const yesterdayMetrics = getYesterdayMetrics();
-  const monthlyMetrics = getMonthlyMetrics();
+  const calculateMetrics = (ordersData: Order[]) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const todayOrders = ordersData.filter(o => new Date(o.date) >= today);
+    const yesterdayOrders = ordersData.filter(o => {
+      const orderDate = new Date(o.date);
+      return orderDate >= yesterday && orderDate < today;
+    });
+    const monthOrders = ordersData.filter(o => new Date(o.date) >= monthStart);
+    
+    const todayMetrics = {
+      orders: todayOrders.length,
+      revenue: todayOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    };
+    
+    const yesterdayMetrics = {
+      orders: yesterdayOrders.length,
+      revenue: yesterdayOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    };
+    
+    const monthlyMetrics = {
+      orders: monthOrders.length,
+      revenue: monthOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    };
+    
+    setMetrics({
+      today: todayMetrics,
+      yesterday: yesterdayMetrics,
+      month: monthlyMetrics
+    });
+    
+    // Calculate daily metrics for the last 7 days
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - (6 - i));
+      return date;
+    });
+    
+    const dailyData = last7Days.map(date => {
+      const formattedDate = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+      
+      const dayOrders = ordersData.filter(o => {
+        const orderDate = new Date(o.date);
+        return orderDate >= dayStart && orderDate < dayEnd;
+      });
+      
+      return {
+        date: formattedDate,
+        Заказы: dayOrders.length,
+        Выручка: Math.round(dayOrders.reduce((sum, o) => sum + o.totalAmount, 0) / 1000)
+      };
+    });
+    
+    setDailyMetrics(dailyData);
+    
+    // Calculate orders by source
+    const ordersBySources = ordersData.reduce((acc: any, order) => {
+      const source = order.source;
+      if (!acc[source]) {
+        acc[source] = { orders: 0, revenue: 0 };
+      }
+      acc[source].orders += 1;
+      acc[source].revenue += order.totalAmount;
+      return acc;
+    }, {});
+    
+    const sourceData = Object.entries(ordersBySources).map(([source, data]: [string, any]) => ({
+      source: source === 'website' ? 'Сайт' :
+              source === 'phone' ? 'Телефон' :
+              source === 'store' ? 'Магазин' :
+              source === 'referral' ? 'Реферал' : 'Другое',
+      Заказы: data.orders,
+      Выручка: Math.round(data.revenue / 1000)
+    }));
+    
+    setSourceMetrics(sourceData);
+    
+    // Get top customers
+    const customerOrders = ordersData.reduce((acc: Record<string, any>, order) => {
+      if (!order.customer) return acc;
+      
+      const customerId = order.customer.id;
+      if (!customerId) return acc;
+      
+      if (!acc[customerId]) {
+        acc[customerId] = { 
+          customerId, 
+          customerName: order.customer.name, 
+          orders: 0, 
+          revenue: 0 
+        };
+      }
+      acc[customerId].orders += 1;
+      acc[customerId].revenue += order.totalAmount;
+      return acc;
+    }, {});
+    
+    const topCustomersData = Object.values(customerOrders)
+      .sort((a: any, b: any) => b.orders - a.orders)
+      .slice(0, 5);
+    
+    setTopCustomers(topCustomersData);
+  };
   
-  // Calculate daily changes for metrics
-  const orderChange = yesterdayMetrics.orders > 0 
-    ? Math.round((todayMetrics.orders - yesterdayMetrics.orders) / yesterdayMetrics.orders * 100)
+  // Calculate changes for metrics
+  const orderChange = metrics.yesterday.orders > 0
+    ? Math.round((metrics.today.orders - metrics.yesterday.orders) / metrics.yesterday.orders * 100)
     : 0;
   
-  const revenueChange = yesterdayMetrics.revenue > 0
-    ? Math.round((todayMetrics.revenue - yesterdayMetrics.revenue) / yesterdayMetrics.revenue * 100)
+  const revenueChange = metrics.yesterday.revenue > 0
+    ? Math.round((metrics.today.revenue - metrics.yesterday.revenue) / metrics.yesterday.revenue * 100)
     : 0;
   
   // Format currency
@@ -45,22 +160,6 @@ export function Dashboard() {
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value);
   };
 
-  // Prepare chart data
-  const last7DaysData = mockDailyMetrics.slice(-7).map(day => ({
-    date: day.date.substring(5), // Extract MM-DD format
-    Заказы: day.orders,
-    Выручка: Math.round(day.revenue / 1000) // Convert to thousands
-  }));
-
-  const sourceData = mockSourceMetrics.map(src => ({
-    source: src.source === 'website' ? 'Сайт' :
-            src.source === 'phone' ? 'Телефон' :
-            src.source === 'store' ? 'Магазин' :
-            src.source === 'referral' ? 'Реферал' : 'Другое',
-    Заказы: src.orders,
-    Выручка: Math.round(src.revenue / 1000) // Convert to thousands
-  }));
-  
   // Recent orders for the dashboard
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -75,26 +174,26 @@ export function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricsCard
           title="Заказы сегодня"
-          value={todayMetrics.orders}
+          value={metrics.today.orders}
           icon={<ChartBar className="h-5 w-5" />}
           change={orderChange}
           compareText="по сравнению со вчера"
         />
         <MetricsCard
           title="Выручка сегодня"
-          value={formatCurrency(todayMetrics.revenue)}
+          value={formatCurrency(metrics.today.revenue)}
           icon={<CreditCard className="h-5 w-5" />}
           change={revenueChange}
           compareText="по сравнению со вчера"
         />
         <MetricsCard
           title="Заказы за месяц"
-          value={monthlyMetrics.orders}
+          value={metrics.month.orders}
           icon={<Calendar className="h-5 w-5" />}
         />
         <MetricsCard
           title="Выручка за месяц"
-          value={formatCurrency(monthlyMetrics.revenue)}
+          value={formatCurrency(metrics.month.revenue)}
           icon={<Users className="h-5 w-5" />}
         />
       </div>
@@ -104,14 +203,14 @@ export function Dashboard() {
           title="Заказы и выручка за неделю"
           subtitle="Последние 7 дней"
           type="bar"
-          data={last7DaysData}
+          data={dailyMetrics}
           dataKey="date"
         />
         <ChartCard
           title="Заказы по источникам"
           subtitle="Распределение по каналам"
           type="pie"
-          data={sourceData}
+          data={sourceMetrics}
           valueKey="Заказы"
           nameKey="source"
         />
@@ -169,19 +268,25 @@ export function Dashboard() {
             <CardDescription>По количеству заказов</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockCustomerMetrics.map((customer) => (
-                <div key={customer.customerId} className="flex items-center justify-between border-b pb-2">
-                  <div>
-                    <p className="font-medium">{customer.customerName}</p>
-                    <p className="text-sm text-muted-foreground">{customer.orders} заказов</p>
+            {isLoading ? (
+              <p>Загрузка данных...</p>
+            ) : topCustomers.length > 0 ? (
+              <div className="space-y-4">
+                {topCustomers.map((customer) => (
+                  <div key={customer.customerId} className="flex items-center justify-between border-b pb-2">
+                    <div>
+                      <p className="font-medium">{customer.customerName}</p>
+                      <p className="text-sm text-muted-foreground">{customer.orders} заказов</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">{formatCurrency(customer.revenue)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{formatCurrency(customer.revenue)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">Нет данных о клиентах</p>
+            )}
           </CardContent>
         </Card>
       </div>
