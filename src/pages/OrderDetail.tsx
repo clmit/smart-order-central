@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -18,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { getOrderById, updateOrder } from '@/lib/api';
+import { getOrderById, updateOrder, deleteOrder } from '@/lib/api';
 import { Order, OrderItem } from '@/types';
 import {
   Select,
@@ -27,6 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +52,7 @@ export function OrderDetail() {
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemPhoto, setNewItemPhoto] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     const loadOrderDetails = async () => {
@@ -163,6 +173,28 @@ export function OrderDetail() {
     }));
   };
 
+  const handleDeleteOrder = async () => {
+    if (!id) return;
+    
+    setIsSubmitting(true);
+    try {
+      const success = await deleteOrder(id);
+      
+      if (success) {
+        toast({
+          title: "Заказ удален",
+          description: "Заказ был успешно удален"
+        });
+        navigate('/orders');
+      }
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+    } finally {
+      setIsSubmitting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ru-RU', {
@@ -266,12 +298,43 @@ export function OrderDetail() {
               </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)}>
-              Редактировать
-            </Button>
+            <>
+              <Button 
+                variant="destructive" 
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Удалить
+              </Button>
+              <Button onClick={() => setIsEditing(true)}>
+                Редактировать
+              </Button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удаление заказа</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите удалить этот заказ? Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOrder}
+              disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting ? 'Удаление...' : 'Удалить'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex flex-col sm:flex-row items-center justify-between bg-card rounded-lg px-6 py-4 border">
         <div className="flex flex-col sm:flex-row items-center gap-4">

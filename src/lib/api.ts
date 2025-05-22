@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, Order, OrderItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -13,7 +12,8 @@ import {
   getOrders,
   getOrderById,
   createOrder,
-  updateOrder
+  updateOrder,
+  deleteOrder
 } from './supabaseApi';
 
 // Export all functions that we want to expose from this API layer
@@ -26,7 +26,8 @@ export {
   getOrders,
   getOrderById,
   createOrder,
-  updateOrder
+  updateOrder,
+  deleteOrder
 };
 
 // Mock API for SMS messaging

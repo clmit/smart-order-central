@@ -552,3 +552,33 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
     throw error;
   }
 };
+
+export const deleteOrder = async (id: string): Promise<boolean> => {
+  try {
+    // First delete all order items
+    const { error: itemsDeleteError } = await supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', id);
+    
+    if (itemsDeleteError) throw itemsDeleteError;
+    
+    // Then delete the order itself
+    const { error: orderDeleteError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+    
+    if (orderDeleteError) throw orderDeleteError;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    toast({
+      title: 'Ошибка',
+      description: 'Не удалось удалить заказ',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
