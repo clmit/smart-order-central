@@ -546,7 +546,7 @@ export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
     console.error("Error creating external order:", error);
     toast({
       title: 'Ошибка',
-      description: 'Не удалось обработать внешний заказ: ' + error.message,
+      description: 'Не удалось обработать внешний заказ: ' + (error as Error).message,
       variant: 'destructive',
     });
     throw error;

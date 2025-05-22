@@ -98,7 +98,7 @@ export function OrderCreate() {
           quantity: Number(item.quantity),
           photoUrl: undefined
         })),
-        status: 'new',
+        status: 'new' as 'new' | 'processing' | 'completed' | 'cancelled',
         totalAmount: calculateTotal()
       };
 

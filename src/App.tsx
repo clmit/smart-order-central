@@ -13,9 +13,6 @@ import Messaging from './pages/Messaging';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
-// Remove the CreateOrder API route from the main application routes
-// as we'll now use the direct API approach
-
 function App() {
   return (
     <Router>
