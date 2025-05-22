@@ -39,8 +39,12 @@ export function Orders() {
     const loadOrders = async () => {
       try {
         const data = await getOrders();
-        setOrders(data);
-        setFilteredOrders(data);
+        // Sort orders by date in descending order (newest first)
+        const sortedOrders = [...data].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setOrders(sortedOrders);
+        setFilteredOrders(sortedOrders);
       } catch (error) {
         console.error('Failed to load orders:', error);
       } finally {
