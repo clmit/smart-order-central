@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,12 +9,17 @@ import {
   FileText,
   PhoneCall,
   Mail,
+  Edit,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { getCustomers } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getCustomers, updateCustomer } from '@/lib/api';
 import { Customer } from '@/types';
+import { useForm } from 'react-hook-form';
+import { toast } from '@/hooks/use-toast';
 
 export function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -23,9 +29,21 @@ export function Customers() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const customersPerPage = 10;
   const navigate = useNavigate();
 
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      phone: '',
+      address: '',
+      email: '',
+    },
+  });
+
+  // Load customers data
   useEffect(() => {
     const loadCustomers = async () => {
       try {
@@ -42,6 +60,7 @@ export function Customers() {
     loadCustomers();
   }, []);
 
+  // Apply filtering and sorting
   useEffect(() => {
     // Apply search filter
     let result = [...customers];
@@ -111,6 +130,52 @@ export function Customers() {
   // Navigate to messaging
   const handleNavigateToMessaging = (phone: string) => {
     navigate(`/messaging?phone=${encodeURIComponent(phone)}`);
+  };
+
+  // Open edit dialog
+  const handleEditCustomer = (customer: Customer) => {
+    setCurrentCustomer(customer);
+    form.reset({
+      name: customer.name,
+      phone: customer.phone,
+      address: customer.address,
+      email: customer.email || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  // Submit edit form
+  const onSubmit = async (data: { name: string; phone: string; address: string; email: string }) => {
+    if (!currentCustomer) return;
+    
+    try {
+      const updatedCustomer = await updateCustomer(currentCustomer.id, {
+        ...data,
+      });
+      
+      if (updatedCustomer) {
+        // Update the customer in the local state
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            c.id === updatedCustomer.id ? updatedCustomer : c
+          )
+        );
+        
+        toast({
+          title: 'Успех',
+          description: 'Данные клиента успешно обновлены',
+        });
+        
+        setEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to update customer:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить данные клиента',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -183,7 +248,7 @@ export function Customers() {
                           )}
                         </div>
                       </th>
-                      <th className="text-right font-medium py-2"></th>
+                      <th className="text-right font-medium py-2">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -212,6 +277,14 @@ export function Customers() {
                         <td className="py-3 text-sm font-medium">{customer.totalOrders}</td>
                         <td className="py-3 font-medium">{formatCurrency(customer.totalSpent)}</td>
                         <td className="py-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditCustomer(customer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -267,6 +340,85 @@ export function Customers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Редактирование клиента</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Имя</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Телефон</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Адрес</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEditDialogOpen(false)} 
+                  type="button"
+                >
+                  Отмена
+                </Button>
+                <Button type="submit">Сохранить</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
