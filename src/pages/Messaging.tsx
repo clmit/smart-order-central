@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
@@ -130,20 +131,31 @@ export function Messaging() {
     try {
       const result = await sendSms(selectedCustomers, message);
       
-      toast({
-        title: "Сообщения отправлены",
-        description: `Успешно отправлено: ${result.sent}, не доставлено: ${result.failed}`,
-        variant: result.success ? "default" : "destructive"
-      });
-      
       if (result.success) {
+        toast({
+          title: "Сообщения отправлены",
+          description: `Успешно отправлено: ${result.sent} сообщений`,
+          variant: "default"
+        });
         setMessage('');
+      } else if (result.sent > 0 && result.failed > 0) {
+        toast({
+          title: "Часть сообщений отправлена",
+          description: `Отправлено: ${result.sent}, не доставлено: ${result.failed}`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Ошибка отправки",
+          description: `Не удалось отправить сообщения: не доставлено ${result.failed}`,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Failed to send messages:', error);
       toast({
         title: "Ошибка отправки",
-        description: "Не удалось отправить сообщения",
+        description: "Не удалось отправить сообщения из-за технической ошибки",
         variant: "destructive"
       });
     } finally {
