@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   FileText, 
   Search, 
@@ -34,6 +34,11 @@ export function Orders() {
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Extract customerPhone from URL query parameter
+  const queryParams = new URLSearchParams(location.search);
+  const customerPhoneParam = queryParams.get('customerPhone');
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -44,7 +49,11 @@ export function Orders() {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setOrders(sortedOrders);
-        setFilteredOrders(sortedOrders);
+
+        // If customerPhone is in the URL, set it as the initial search term
+        if (customerPhoneParam) {
+          setSearchTerm(decodeURIComponent(customerPhoneParam));
+        }
       } catch (error) {
         console.error('Failed to load orders:', error);
       } finally {
@@ -53,7 +62,7 @@ export function Orders() {
     };
     
     loadOrders();
-  }, []);
+  }, [customerPhoneParam]);
 
   useEffect(() => {
     // Apply filters
@@ -176,6 +185,21 @@ export function Orders() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Show customer info if filter by customer is active */}
+      {customerPhoneParam && (
+        <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="font-medium">Отображаются заказы клиента с номером: {decodeURIComponent(customerPhoneParam)}</p>
+          </div>
+          <Button variant="outline" onClick={() => {
+            setSearchTerm('');
+            navigate('/orders');
+          }}>
+            Отменить фильтр
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
