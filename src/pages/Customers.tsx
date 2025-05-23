@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -104,6 +103,16 @@ export function Customers() {
     }
   };
 
+  // Navigate to customer orders
+  const handleNavigateToCustomerOrders = (phone: string) => {
+    navigate(`/orders?customerPhone=${encodeURIComponent(phone)}`);
+  };
+
+  // Navigate to messaging
+  const handleNavigateToMessaging = (phone: string) => {
+    navigate(`/messaging?phone=${encodeURIComponent(phone)}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -206,7 +215,7 @@ export function Customers() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => navigate(`/messaging?phone=${encodeURIComponent(customer.phone)}`)}
+                            onClick={() => handleNavigateToMessaging(customer.phone)}
                           >
                             <Mail className="h-4 w-4" />
                             <span className="sr-only">Send Message</span>
@@ -214,7 +223,7 @@ export function Customers() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => navigate(`/orders?customerPhone=${encodeURIComponent(customer.phone)}`)}
+                            onClick={() => handleNavigateToCustomerOrders(customer.phone)}
                           >
                             <FileText className="h-4 w-4" />
                             <span className="sr-only">Orders</span>
