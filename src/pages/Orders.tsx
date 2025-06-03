@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -24,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { getOrders } from '@/lib/api';
 import { Order } from '@/types';
+import { formatOrderId } from '@/lib/orderUtils';
 
 export function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -74,7 +74,8 @@ export function Orders() {
         order => 
           order.customer?.name?.toLowerCase().includes(term) || 
           order.customer?.phone?.includes(term) ||
-          order.id.includes(term)
+          order.id.includes(term) ||
+          formatOrderId(order.id).toLowerCase().includes(term)
       );
     }
     
@@ -163,7 +164,7 @@ export function Orders() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Поиск по имени или телефону..."
+            placeholder="Поиск по имени, телефону или ID заказа..."
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -231,7 +232,7 @@ export function Orders() {
                         className="border-b hover:bg-muted/50 cursor-pointer"
                         onClick={() => navigate(`/orders/${order.id}`)}
                       >
-                        <td className="py-3 text-sm">#{order.id.substring(0, 6)}</td>
+                        <td className="py-3 text-sm font-mono">{formatOrderId(order.id)}</td>
                         <td className="py-3 text-sm">{formatDate(order.date)}</td>
                         <td className="py-3">
                           <div className="font-medium">{order.customer?.name || 'Неизвестно'}</div>

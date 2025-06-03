@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { OrderSource } from '@/types';
 import CustomerInfoForm from '@/components/order/CustomerInfoForm';
 import OrderItemsSection from '@/components/order/OrderItemsSection';
 import { createOrder } from '@/lib/supabaseApi';
+import { formatOrderId } from '@/lib/orderUtils';
 
 export function OrderCreate() {
   const navigate = useNavigate();
@@ -109,7 +109,7 @@ export function OrderCreate() {
       
       toast({
         title: 'Успешно',
-        description: `Заказ #${createdOrder.id.substring(0, 6)} создан`,
+        description: `Заказ ${formatOrderId(createdOrder.id)} создан`,
       });
       
       // Navigate to the order details page
