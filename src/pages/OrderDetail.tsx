@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -9,7 +10,8 @@ import {
   XCircle,
   AlertCircle,
   Plus,
-  Image
+  Edit,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getOrderById, updateOrder, deleteOrder } from '@/lib/api';
 import { Order, OrderItem } from '@/types';
+import ImageUpload from '@/components/order/ImageUpload';
 import {
   Select,
   SelectContent,
@@ -168,6 +171,15 @@ export function OrderDetail() {
     setOrderItems(orderItems.map(item => {
       if (item.id === itemId) {
         return { ...item, quantity: newQuantity };
+      }
+      return item;
+    }));
+  };
+
+  const handleUpdateItemPhoto = (itemId: string, photoUrl: string) => {
+    setOrderItems(orderItems.map(item => {
+      if (item.id === itemId) {
+        return { ...item, photoUrl: photoUrl || undefined };
       }
       return item;
     }));
@@ -419,141 +431,166 @@ export function OrderDetail() {
           <CardTitle>Товары</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left font-medium py-2">Название</th>
-                  <th className="text-left font-medium py-2">Описание</th>
-                  <th className="text-center font-medium py-2">Цена</th>
-                  <th className="text-center font-medium py-2">Кол-во</th>
-                  <th className="text-right font-medium py-2">Сумма</th>
-                  {isEditing && <th className="text-right font-medium py-2">Действия</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {orderItems.map((item) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        {item.photoUrl && (
+          <div className="space-y-4">
+            {orderItems.map((item) => (
+              <div key={item.id} className="border rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Фото товара */}
+                  <div className="space-y-2">
+                    <Label>Фото товара</Label>
+                    {isEditing ? (
+                      <ImageUpload 
+                        onImageUploaded={(url) => handleUpdateItemPhoto(item.id, url)}
+                        currentImage={item.photoUrl}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                        {item.photoUrl ? (
                           <img 
                             src={item.photoUrl} 
                             alt={item.name} 
-                            className="w-10 h-10 object-cover rounded-md"
+                            className="h-full w-full object-cover rounded-lg"
                           />
+                        ) : (
+                          <span className="text-gray-500 text-sm">Фото не загружено</span>
                         )}
-                        <span className="font-medium">{item.name}</span>
                       </div>
-                    </td>
-                    <td className="py-3 text-sm text-muted-foreground">{item.description || '—'}</td>
-                    <td className="py-3 text-center">{formatCurrency(item.price)}</td>
-                    <td className="py-3 text-center">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          className="w-20 text-center"
-                          value={item.quantity}
-                          min={1}
-                          onChange={(e) => handleUpdateItemQuantity(item.id, parseInt(e.target.value, 10) || 1)}
-                        />
-                      ) : (
-                        item.quantity
-                      )}
-                    </td>
-                    <td className="py-3 text-right font-medium">{formatCurrency(item.price * item.quantity)}</td>
-                    {isEditing && (
-                      <td className="py-3 text-right">
+                    )}
+                  </div>
+
+                  {/* Информация о товаре */}
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Название</Label>
+                        <div className="font-medium text-lg">{item.name}</div>
+                      </div>
+                      <div>
+                        <Label>Цена</Label>
+                        <div className="font-medium text-lg">{formatCurrency(item.price)}</div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>Описание</Label>
+                      <div className="text-muted-foreground">
+                        {item.description || 'Описание отсутствует'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <Label>Количество</Label>
+                          {isEditing ? (
+                            <Input
+                              type="number"
+                              className="w-20"
+                              value={item.quantity}
+                              min={1}
+                              onChange={(e) => handleUpdateItemQuantity(item.id, parseInt(e.target.value, 10) || 1)}
+                            />
+                          ) : (
+                            <div className="font-medium">{item.quantity} шт.</div>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Сумма</Label>
+                          <div className="font-bold text-lg">{formatCurrency(item.price * item.quantity)}</div>
+                        </div>
+                      </div>
+                      
+                      {isEditing && (
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          variant="destructive"
+                          size="sm"
                           onClick={() => handleRemoveItem(item.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-crm-red" />
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Удалить
                         </Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                
-                {isEditing && (
-                  <tr className="border-b bg-muted/30">
-                    <td className="py-3">
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {isEditing && (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                <h4 className="font-medium mb-4">Добавить новый товар</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Фото товара</Label>
+                    <ImageUpload 
+                      onImageUploaded={(url) => setNewItemPhoto(url)}
+                      currentImage={newItemPhoto}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Название *</Label>
+                        <Input 
+                          placeholder="Название товара" 
+                          value={newItemName}
+                          onChange={(e) => setNewItemName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Цена *</Label>
+                        <Input 
+                          type="number"
+                          placeholder="0.00"
+                          value={newItemPrice}
+                          onChange={(e) => setNewItemPrice(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>Описание</Label>
                       <Input 
-                        placeholder="Название товара" 
-                        value={newItemName}
-                        onChange={(e) => setNewItemName(e.target.value)}
-                      />
-                    </td>
-                    <td className="py-3">
-                      <Input 
-                        placeholder="Описание (опционально)" 
+                        placeholder="Описание товара (опционально)" 
                         value={newItemDescription}
                         onChange={(e) => setNewItemDescription(e.target.value)}
                       />
-                    </td>
-                    <td className="py-3">
-                      <Input 
-                        type="number"
-                        placeholder="0.00"
-                        className="text-right"
-                        value={newItemPrice}
-                        onChange={(e) => setNewItemPrice(e.target.value)}
-                      />
-                    </td>
-                    <td className="py-3">
-                      <Input 
-                        type="number"
-                        className="w-20 text-center mx-auto"
-                        value={newItemQuantity}
-                        min={1}
-                        onChange={(e) => setNewItemQuantity(e.target.value)}
-                      />
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="relative w-10 h-10 border rounded flex items-center justify-center overflow-hidden">
-                          {newItemPhoto ? (
-                            <img 
-                              src={newItemPhoto}
-                              alt="Preview"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Image className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Количество</Label>
                         <Input 
-                          placeholder="URL фото"
-                          className="w-20 text-xs"
-                          value={newItemPhoto}
-                          onChange={(e) => setNewItemPhoto(e.target.value)}
+                          type="number"
+                          className="w-20"
+                          value={newItemQuantity}
+                          min={1}
+                          onChange={(e) => setNewItemQuantity(e.target.value)}
                         />
                       </div>
-                    </td>
-                    <td className="py-3 text-right">
+                      
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={handleAddItem}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Добавить
+                        Добавить товар
                       </Button>
-                    </td>
-                  </tr>
-                )}
-                
-                <tr>
-                  <td colSpan={isEditing ? 6 : 5} className="pt-4">
-                    <div className="flex justify-end items-center">
-                      <div className="text-muted-foreground mr-8">Итого:</div>
-                      <div className="text-xl font-bold">{formatCurrency(total)}</div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <Separator />
+            
+            <div className="flex justify-end">
+              <div className="text-right">
+                <div className="text-muted-foreground">Итого:</div>
+                <div className="text-2xl font-bold">{formatCurrency(total)}</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -8,6 +8,7 @@ interface OrderItem {
   description: string;
   price: number;
   quantity: number;
+  photoUrl?: string;
 }
 
 interface OrderItemsSectionProps {
