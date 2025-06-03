@@ -20,11 +20,11 @@ export function OrderCreate() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [orderSource, setOrderSource] = useState<OrderSource>('phone');
   const [items, setItems] = useState([
-    { name: '', description: '', price: 0, quantity: 1 }
+    { name: '', description: '', price: 0, quantity: 1, photoUrl: '' }
   ]);
 
   const addItem = () => {
-    setItems([...items, { name: '', description: '', price: 0, quantity: 1 }]);
+    setItems([...items, { name: '', description: '', price: 0, quantity: 1, photoUrl: '' }]);
   };
 
   const removeItem = (index: number) => {
@@ -96,7 +96,7 @@ export function OrderCreate() {
           description: item.description || '',
           price: Number(item.price),
           quantity: Number(item.quantity),
-          photoUrl: undefined
+          photoUrl: item.photoUrl || undefined
         })),
         status: 'new' as 'new' | 'processing' | 'completed' | 'cancelled',
         totalAmount: calculateTotal()

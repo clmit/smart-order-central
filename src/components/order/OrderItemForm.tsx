@@ -4,12 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Minus } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 interface OrderItem {
   name: string;
   description: string;
   price: number;
   quantity: number;
+  photoUrl?: string;
 }
 
 interface OrderItemFormProps {
@@ -27,6 +29,10 @@ export const OrderItemForm = ({
   removeItem,
   canRemove
 }: OrderItemFormProps) => {
+  const handleImageUploaded = (url: string) => {
+    updateItem(index, 'photoUrl', url);
+  };
+
   return (
     <div className="space-y-2 border p-4 rounded-md">
       <div className="flex justify-between items-center">
@@ -79,6 +85,13 @@ export const OrderItemForm = ({
             value={item.quantity}
             onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
             required
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label>Фото товара</Label>
+          <ImageUpload 
+            onImageUploaded={handleImageUploaded} 
+            currentImage={item.photoUrl}
           />
         </div>
       </div>
