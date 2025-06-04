@@ -1,8 +1,7 @@
 
-export const formatOrderId = (id: string): string => {
-  // Extract the last 5 characters from the UUID and convert to uppercase
-  const numericPart = id.replace(/-/g, '').slice(-5).toUpperCase();
-  return `CL${numericPart}`;
+export const formatOrderId = (orderNumber: number): string => {
+  // Format order number as CL followed by 5-digit padded number
+  return `CL${orderNumber.toString().padStart(5, '0')}`;
 };
 
 export const getShortOrderId = (id: string): string => {

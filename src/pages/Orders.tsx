@@ -75,7 +75,7 @@ export function Orders() {
           order.customer?.name?.toLowerCase().includes(term) || 
           order.customer?.phone?.includes(term) ||
           order.id.includes(term) ||
-          formatOrderId(order.id).toLowerCase().includes(term)
+          formatOrderId(order.orderNumber || 0).toLowerCase().includes(term)
       );
     }
     
@@ -232,7 +232,7 @@ export function Orders() {
                         className="border-b hover:bg-muted/50 cursor-pointer"
                         onClick={() => navigate(`/orders/${order.id}`)}
                       >
-                        <td className="py-3 text-sm font-mono">{formatOrderId(order.id)}</td>
+                        <td className="py-3 text-sm font-mono">{formatOrderId(order.orderNumber || 0)}</td>
                         <td className="py-3 text-sm">{formatDate(order.date)}</td>
                         <td className="py-3">
                           <div className="font-medium">{order.customer?.name || 'Неизвестно'}</div>

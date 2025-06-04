@@ -229,7 +229,8 @@ export const getOrders = async (): Promise<Order[]> => {
       source: order.source as any,
       items: itemsByOrder[order.id] || [],
       status: order.status as any,
-      totalAmount: Number(order.total_amount)
+      totalAmount: Number(order.total_amount),
+      orderNumber: order.order_number
     }));
   } catch (error) {
     console.error('Error fetching orders:', error);
@@ -297,7 +298,8 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
       source: order.source as any,
       items: orderItems,
       status: order.status as any,
-      totalAmount: Number(order.total_amount)
+      totalAmount: Number(order.total_amount),
+      orderNumber: order.order_number
     };
   } catch (error) {
     console.error('Error fetching order by ID:', error);
@@ -404,7 +406,8 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
         photoUrl: item.photo_url || undefined
       })),
       status: newOrder.status as any,
-      totalAmount: Number(newOrder.total_amount)
+      totalAmount: Number(newOrder.total_amount),
+      orderNumber: newOrder.order_number
     };
   } catch (error) {
     console.error('Error creating order:', error);

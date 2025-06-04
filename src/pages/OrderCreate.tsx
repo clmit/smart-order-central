@@ -109,7 +109,7 @@ export function OrderCreate() {
       
       toast({
         title: 'Успешно',
-        description: `Заказ ${formatOrderId(createdOrder.id)} создан`,
+        description: `Заказ ${formatOrderId(createdOrder.orderNumber || 0)} создан`,
       });
       
       // Navigate to the order details page

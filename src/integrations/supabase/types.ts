@@ -85,6 +85,7 @@ export type Database = {
           customer_id: string
           date: string
           id: string
+          order_number: number
           source: string
           status: string
           total_amount: number
@@ -93,6 +94,7 @@ export type Database = {
           customer_id: string
           date?: string
           id?: string
+          order_number?: number
           source: string
           status: string
           total_amount?: number
@@ -101,6 +103,7 @@ export type Database = {
           customer_id?: string
           date?: string
           id?: string
+          order_number?: number
           source?: string
           status?: string
           total_amount?: number

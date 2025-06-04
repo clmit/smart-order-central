@@ -350,7 +350,7 @@ export function OrderDetail() {
 
       <div className="flex flex-col sm:flex-row items-center justify-between bg-card rounded-lg px-6 py-4 border">
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <h1 className="text-2xl font-bold">Заказ {formatOrderId(order.id)}</h1>
+          <h1 className="text-2xl font-bold">Заказ {formatOrderId(order.orderNumber || 0)}</h1>
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${getStatusClass(order.status)}`}>
             {getStatusIcon(order.status)}
             {getStatusLabel(order.status)}

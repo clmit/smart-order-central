@@ -1,27 +1,26 @@
-
-export interface Customer {
+export type Customer = {
   id: string;
   name: string;
   phone: string;
-  address: string;
+  address?: string;
   email?: string;
   createdAt: string;
   totalOrders: number;
   totalSpent: number;
-}
+};
 
-export interface OrderItem {
+export type OrderItem = {
   id: string;
   name: string;
   description?: string;
   price: number;
   quantity: number;
   photoUrl?: string;
-}
+};
 
 export type OrderSource = 'website' | 'phone' | 'store' | 'referral' | 'other';
 
-export interface Order {
+export type Order = {
   id: string;
   customerId: string;
   customer?: Customer;
@@ -30,7 +29,8 @@ export interface Order {
   items: OrderItem[];
   status: 'new' | 'processing' | 'completed' | 'cancelled';
   totalAmount: number;
-}
+  orderNumber?: number;
+};
 
 export interface DailyMetric {
   date: string;
