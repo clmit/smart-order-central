@@ -107,17 +107,63 @@ serve(async (req) => {
     const orderDate = requestData.date ? new Date(requestData.date).toISOString() : new Date().toISOString()
     console.log('Order date:', orderDate)
     
+    // Handle order number
+    let orderNumber = null
+    if (requestData.orderNumber) {
+      // Extract number from CL format (e.g., "CL00001" -> 1)
+      const match = requestData.orderNumber.match(/^CL(\d+)$/)
+      if (match) {
+        orderNumber = parseInt(match[1], 10)
+        console.log('Using provided order number:', orderNumber)
+        
+        // Check if this order number already exists
+        const { data: existingOrder, error: checkError } = await supabase
+          .from('orders')
+          .select('order_number')
+          .eq('order_number', orderNumber)
+          .maybeSingle()
+        
+        if (checkError) {
+          console.error('Error checking existing order number:', checkError)
+          return new Response(JSON.stringify({ error: 'Failed to check order number', details: checkError.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+        
+        if (existingOrder) {
+          return new Response(JSON.stringify({ error: 'Order number already exists', orderNumber: requestData.orderNumber }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+      } else {
+        return new Response(JSON.stringify({ error: 'Invalid order number format. Expected: CL00001', provided: requestData.orderNumber }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+    
+    // Create the order data
+    const orderData = {
+      customer_id: customerId,
+      date: orderDate,
+      source: requestData.source || 'other',
+      status: 'new',
+      total_amount: totalAmount
+    } as any
+    
+    // Add order number if provided
+    if (orderNumber !== null) {
+      orderData.order_number = orderNumber
+    }
+    
     // Create the order
-    console.log('Creating order')
+    console.log('Creating order with data:', orderData)
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        customer_id: customerId,
-        date: orderDate,
-        source: requestData.source || 'other',
-        status: 'new',
-        total_amount: totalAmount
-      })
+      .insert(orderData)
       .select()
       .single()
     

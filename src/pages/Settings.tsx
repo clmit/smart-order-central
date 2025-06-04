@@ -24,6 +24,7 @@ export function Settings() {
       customerEmail: "test@example.com",
       source: "other",
       date: "2024-01-15T10:30:00Z", // Пример указания даты
+      orderNumber: "CL00999", // Пример указания номера заказа
       items: [
         {
           name: "Тестовый товар",
@@ -91,6 +92,7 @@ export function Settings() {
   "customerEmail": "email@example.com",
   "source": "website", // website, phone, store, referral, other
   "date": "2024-01-15T10:30:00Z", // необязательно, ISO формат
+  "orderNumber": "CL00001", // необязательно, формат CL00001
   "items": [ // обязательно
     {
       "name": "Название товара", // обязательно
@@ -108,6 +110,7 @@ export function Settings() {
                 <p className="font-medium">Описание полей</p>
                 <div className="bg-muted p-2 rounded-md text-sm space-y-1">
                   <p><strong>date</strong> - Дата заказа в формате ISO 8601 (например, "2024-01-15T10:30:00Z"). Поле необязательное - если не указано, будет использована текущая дата.</p>
+                  <p><strong>orderNumber</strong> - Номер заказа в формате CL00001 (например, "CL00001", "CL00999"). Поле необязательное - если не указано, будет автоматически назначен следующий доступный номер.</p>
                   <p><strong>source</strong> - Источник заказа: website, phone, store, referral, other</p>
                   <p><strong>customerName, customerPhone</strong> - Обязательные поля</p>
                   <p><strong>items</strong> - Массив товаров, обязательно должен содержать хотя бы один товар</p>
@@ -160,6 +163,7 @@ const orderData = {
   customerEmail: "email@example.com",
   source: "website",
   date: "2024-01-15T10:30:00Z", // необязательно
+  orderNumber: "CL00001", // необязательно
   items: [
     {
       name: "Название товара",
@@ -181,7 +185,7 @@ window.location.href = "${apiBaseUrl}/api/orders/create?data=" + encodedData;`}
               
               <div className="mt-4">
                 <Button onClick={handleTestAPI}>
-                  Протестировать API (создать тестовый заказ с датой)
+                  Протестировать API (создать тестовый заказ с номером)
                 </Button>
               </div>
             </CardContent>
