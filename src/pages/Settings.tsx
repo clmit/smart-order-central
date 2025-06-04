@@ -23,6 +23,7 @@ export function Settings() {
       customerAddress: "Тестовый адрес",
       customerEmail: "test@example.com",
       source: "other",
+      date: "2024-01-15T10:30:00Z", // Пример указания даты
       items: [
         {
           name: "Тестовый товар",
@@ -89,6 +90,7 @@ export function Settings() {
   "customerAddress": "Адрес доставки",
   "customerEmail": "email@example.com",
   "source": "website", // website, phone, store, referral, other
+  "date": "2024-01-15T10:30:00Z", // необязательно, ISO формат
   "items": [ // обязательно
     {
       "name": "Название товара", // обязательно
@@ -100,6 +102,16 @@ export function Settings() {
   ]
 }`}
                 </pre>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-medium">Описание полей</p>
+                <div className="bg-muted p-2 rounded-md text-sm space-y-1">
+                  <p><strong>date</strong> - Дата заказа в формате ISO 8601 (например, "2024-01-15T10:30:00Z"). Поле необязательное - если не указано, будет использована текущая дата.</p>
+                  <p><strong>source</strong> - Источник заказа: website, phone, store, referral, other</p>
+                  <p><strong>customerName, customerPhone</strong> - Обязательные поля</p>
+                  <p><strong>items</strong> - Массив товаров, обязательно должен содержать хотя бы один товар</p>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -118,9 +130,10 @@ export function Settings() {
     "totalOrders": 1,
     "totalSpent": 1000
   },
-  "date": "2023-05-10T10:00:00Z",
+  "date": "2024-01-15T10:30:00Z",
   "source": "website",
   "status": "new",
+  "orderNumber": 1,
   "items": [
     {
       "id": "uuid",
@@ -146,6 +159,7 @@ const orderData = {
   customerAddress: "Адрес доставки",
   customerEmail: "email@example.com",
   source: "website",
+  date: "2024-01-15T10:30:00Z", // необязательно
   items: [
     {
       name: "Название товара",
@@ -167,7 +181,7 @@ window.location.href = "${apiBaseUrl}/api/orders/create?data=" + encodedData;`}
               
               <div className="mt-4">
                 <Button onClick={handleTestAPI}>
-                  Протестировать API (создать тестовый заказ)
+                  Протестировать API (создать тестовый заказ с датой)
                 </Button>
               </div>
             </CardContent>

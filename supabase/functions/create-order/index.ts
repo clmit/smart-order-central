@@ -103,13 +103,17 @@ serve(async (req) => {
     )
     console.log('Calculated total amount:', totalAmount)
     
+    // Determine order date - use provided date or current date
+    const orderDate = requestData.date ? new Date(requestData.date).toISOString() : new Date().toISOString()
+    console.log('Order date:', orderDate)
+    
     // Create the order
     console.log('Creating order')
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         customer_id: customerId,
-        date: new Date().toISOString(),
+        date: orderDate,
         source: requestData.source || 'other',
         status: 'new',
         total_amount: totalAmount
@@ -191,7 +195,8 @@ serve(async (req) => {
         quantity: item.quantity,
         photoUrl: item.photo_url
       })),
-      totalAmount: Number(order.total_amount)
+      totalAmount: Number(order.total_amount),
+      orderNumber: order.order_number
     }
     
     console.log('Successfully created order:', order.id)

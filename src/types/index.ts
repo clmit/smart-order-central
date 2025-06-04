@@ -1,3 +1,4 @@
+
 export type Customer = {
   id: string;
   name: string;
@@ -49,4 +50,20 @@ export interface CustomerMetric {
   customerName: string;
   orders: number;
   revenue: number;
+}
+
+export interface ExternalOrderData {
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  source?: OrderSource;
+  date?: string; // Новое поле для даты заказа
+  items: {
+    name: string;
+    description?: string;
+    price: number;
+    quantity: number;
+    photoUrl?: string;
+  }[];
 }

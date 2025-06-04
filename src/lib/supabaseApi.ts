@@ -350,12 +350,15 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
       0
     );
     
+    // Use provided date or current date
+    const orderDate = orderData.date || new Date().toISOString();
+    
     // Create the order
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert({
         customer_id: customerId,
-        date: orderData.date || new Date().toISOString(),
+        date: orderDate,
         source: orderData.source || 'other',
         status: orderData.status || 'new',
         total_amount: totalAmount
