@@ -165,29 +165,46 @@ export const updateCustomer = async (id: string, customerData: Partial<Customer>
 // Order API with Supabase
 export const getOrders = async (): Promise<Order[]> => {
   try {
+    console.log('Starting to fetch orders...');
+    
     // First get all orders
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
       .select('*');
     
-    if (ordersError) throw ordersError;
+    console.log('Orders query result:', { ordersData, ordersError });
+    
+    if (ordersError) {
+      console.error('Orders query error details:', ordersError);
+      throw ordersError;
+    }
     
     // If no orders, return empty array
     if (!ordersData || ordersData.length === 0) {
+      console.log('No orders found, returning empty array');
       return [];
     }
     
+    console.log(`Found ${ordersData.length} orders`);
+    
     // Get all customers for these orders
     const customerIds = [...new Set(ordersData.map(order => order.customer_id))];
+    console.log('Unique customer IDs:', customerIds);
     
     let customersData = [];
     if (customerIds.length > 0) {
+      console.log('Fetching customers...');
       const { data, error: customersError } = await supabase
         .from('customers')
         .select('*')
         .in('id', customerIds);
       
-      if (customersError) throw customersError;
+      console.log('Customers query result:', { data, customersError });
+      
+      if (customersError) {
+        console.error('Customers query error details:', customersError);
+        throw customersError;
+      }
       customersData = data || [];
     }
     
@@ -207,15 +224,22 @@ export const getOrders = async (): Promise<Order[]> => {
     
     // Get order items
     const orderIds = ordersData.map(order => order.id);
+    console.log('Order IDs for items lookup:', orderIds);
     
     let itemsData = [];
     if (orderIds.length > 0) {
+      console.log('Fetching order items...');
       const { data, error: itemsError } = await supabase
         .from('order_items')
         .select('*')
         .in('order_id', orderIds);
       
-      if (itemsError) throw itemsError;
+      console.log('Order items query result:', { data, itemsError });
+      
+      if (itemsError) {
+        console.error('Order items query error details:', itemsError);
+        throw itemsError;
+      }
       itemsData = data || [];
     }
     
@@ -236,7 +260,7 @@ export const getOrders = async (): Promise<Order[]> => {
     }, {} as Record<string, OrderItem[]>);
     
     // Combine all data
-    return ordersData.map(order => ({
+    const finalOrders = ordersData.map(order => ({
       id: order.id,
       customerId: order.customer_id,
       customer: customersMap[order.customer_id],
@@ -247,6 +271,9 @@ export const getOrders = async (): Promise<Order[]> => {
       totalAmount: Number(order.total_amount),
       orderNumber: order.order_number
     }));
+    
+    console.log('Successfully processed all orders:', finalOrders.length);
+    return finalOrders;
   } catch (error) {
     console.error('Error fetching orders:', error);
     toast({
