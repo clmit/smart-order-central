@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, Order, OrderItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -170,7 +171,8 @@ export const getOrders = async (): Promise<Order[]> => {
     // First get all orders
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select('*');
+      .select('*')
+      .order('date', { ascending: false });
     
     console.log('Orders query result:', { ordersData, ordersError });
     
@@ -189,23 +191,35 @@ export const getOrders = async (): Promise<Order[]> => {
     
     // Get all customers for these orders
     const customerIds = [...new Set(ordersData.map(order => order.customer_id))];
-    console.log('Unique customer IDs:', customerIds);
+    console.log('Unique customer IDs:', customerIds.length);
     
     let customersData = [];
     if (customerIds.length > 0) {
       console.log('Fetching customers...');
-      const { data, error: customersError } = await supabase
-        .from('customers')
-        .select('*')
-        .in('id', customerIds);
       
-      console.log('Customers query result:', { data, customersError });
-      
-      if (customersError) {
-        console.error('Customers query error details:', customersError);
-        throw customersError;
+      // Process customers in batches to avoid URL length issues
+      const batchSize = 100;
+      const customerBatches = [];
+      for (let i = 0; i < customerIds.length; i += batchSize) {
+        customerBatches.push(customerIds.slice(i, i + batchSize));
       }
-      customersData = data || [];
+      
+      const allCustomers = [];
+      for (const batch of customerBatches) {
+        const { data, error: customersError } = await supabase
+          .from('customers')
+          .select('*')
+          .in('id', batch);
+        
+        if (customersError) {
+          console.error('Customers query error details:', customersError);
+          throw customersError;
+        }
+        if (data) allCustomers.push(...data);
+      }
+      
+      customersData = allCustomers;
+      console.log('Customers query result:', customersData.length);
     }
     
     const customersMap = customersData.reduce((acc, customer) => {
@@ -222,25 +236,37 @@ export const getOrders = async (): Promise<Order[]> => {
       return acc;
     }, {} as Record<string, Customer>);
     
-    // Get order items
+    // Get order items in batches to avoid URL length issues
     const orderIds = ordersData.map(order => order.id);
-    console.log('Order IDs for items lookup:', orderIds);
+    console.log('Order IDs for items lookup:', orderIds.length);
     
     let itemsData = [];
     if (orderIds.length > 0) {
-      console.log('Fetching order items...');
-      const { data, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*')
-        .in('order_id', orderIds);
+      console.log('Fetching order items in batches...');
       
-      console.log('Order items query result:', { data, itemsError });
-      
-      if (itemsError) {
-        console.error('Order items query error details:', itemsError);
-        throw itemsError;
+      // Process order IDs in smaller batches to avoid URL length limits
+      const batchSize = 50;
+      const orderBatches = [];
+      for (let i = 0; i < orderIds.length; i += batchSize) {
+        orderBatches.push(orderIds.slice(i, i + batchSize));
       }
-      itemsData = data || [];
+      
+      const allItems = [];
+      for (const batch of orderBatches) {
+        const { data, error: itemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .in('order_id', batch);
+        
+        if (itemsError) {
+          console.error('Order items query error details:', itemsError);
+          throw itemsError;
+        }
+        if (data) allItems.push(...data);
+      }
+      
+      itemsData = allItems;
+      console.log('Order items query result:', itemsData.length);
     }
     
     // Group items by order_id
