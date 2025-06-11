@@ -172,14 +172,24 @@ export const getOrders = async (): Promise<Order[]> => {
     
     if (ordersError) throw ordersError;
     
+    // If no orders, return empty array
+    if (!ordersData || ordersData.length === 0) {
+      return [];
+    }
+    
     // Get all customers for these orders
     const customerIds = [...new Set(ordersData.map(order => order.customer_id))];
-    const { data: customersData, error: customersError } = await supabase
-      .from('customers')
-      .select('*')
-      .in('id', customerIds);
     
-    if (customersError) throw customersError;
+    let customersData = [];
+    if (customerIds.length > 0) {
+      const { data, error: customersError } = await supabase
+        .from('customers')
+        .select('*')
+        .in('id', customerIds);
+      
+      if (customersError) throw customersError;
+      customersData = data || [];
+    }
     
     const customersMap = customersData.reduce((acc, customer) => {
       acc[customer.id] = {
@@ -197,12 +207,17 @@ export const getOrders = async (): Promise<Order[]> => {
     
     // Get order items
     const orderIds = ordersData.map(order => order.id);
-    const { data: itemsData, error: itemsError } = await supabase
-      .from('order_items')
-      .select('*')
-      .in('order_id', orderIds);
     
-    if (itemsError) throw itemsError;
+    let itemsData = [];
+    if (orderIds.length > 0) {
+      const { data, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+      
+      if (itemsError) throw itemsError;
+      itemsData = data || [];
+    }
     
     // Group items by order_id
     const itemsByOrder = itemsData.reduce((acc, item) => {
