@@ -4,6 +4,7 @@ import MetricsCard from '@/components/charts/MetricsCard';
 import ChartCard from '@/components/charts/ChartCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getOrders } from '@/lib/api';
+import { getTimeSeriesData, getSourceData } from '@/lib/statisticsApi';
 import { Order } from '@/types';
 
 export function Dashboard() {
@@ -21,19 +22,30 @@ export function Dashboard() {
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
   
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadData = async () => {
       try {
-        const data = await getOrders();
-        setOrders(data);
-        calculateMetrics(data);
+        // Загружаем данные параллельно для лучшей производительности
+        const [ordersData, weeklyData, sourcesData] = await Promise.all([
+          getOrders(),
+          getTimeSeriesData('week', 'orders'),
+          getSourceData('orders')
+        ]);
+        
+        setOrders(ordersData);
+        calculateMetrics(ordersData);
+        
+        // Используем оптимизированные данные для графиков
+        setDailyMetrics(weeklyData);
+        setSourceMetrics(sourcesData);
+        
       } catch (error) {
-        console.error('Failed to load orders:', error);
+        console.error('Failed to load dashboard data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadOrders();
+    loadData();
   }, []);
   
   const calculateMetrics = (ordersData: Order[]) => {
@@ -253,8 +265,8 @@ export function Dashboard() {
           subtitle="Распределение по каналам"
           type="pie"
           data={sourceMetrics}
-          valueKey="Заказы"
-          nameKey="source"
+          valueKey="value"
+          nameKey="name"
         />
       </div>
 

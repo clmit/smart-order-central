@@ -10,263 +10,115 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getOrders } from '@/lib/api';
-import { Order } from '@/types';
+import { 
+  getBasicStatistics,
+  getTimeSeriesData,
+  getSourceData,
+  getTopCustomersData,
+  StatisticsMetrics,
+  TimeSeriesData,
+  SourceData,
+  CustomerData
+} from '@/lib/statisticsApi';
 
 export function Statistics() {
-  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState('week');
   const [metricType, setMetricType] = useState('orders');
-  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
-  const [sourceChartData, setSourceChartData] = useState<any[]>([]);
-  const [customerChartData, setCustomerChartData] = useState<any[]>([]);
-  const [statistics, setStatistics] = useState({
+  
+  const [statistics, setStatistics] = useState<StatisticsMetrics>({
     today: 0,
     yesterday: 0,
     lastWeek: 0,
     lastMonth: 0,
     avgOrderValue: 0,
-    conversion: 2.8, // Примерное значение для конверсии
+    conversion: 2.8,
     repeatOrders: 0,
     avgLtv: 0
   });
   
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
+  const [sourceChartData, setSourceChartData] = useState<SourceData[]>([]);
+  const [customerChartData, setCustomerChartData] = useState<CustomerData[]>([]);
+  
+  // Загружаем базовую статистику отдельно от графиков
   useEffect(() => {
-    const loadData = async () => {
+    const loadBasicStats = async () => {
+      console.log('Loading basic statistics...');
+      const stats = await getBasicStatistics();
+      if (stats) {
+        setStatistics(stats);
+      }
+    };
+    
+    loadBasicStats();
+  }, []);
+  
+  // Загружаем данные для графиков отдельно
+  useEffect(() => {
+    const loadChartData = async () => {
+      setIsLoading(true);
+      console.log('Loading chart data...');
+      
       try {
-        const data = await getOrders();
-        setOrders(data);
-        calculateMetrics(data, period, metricType);
+        // Загружаем данные параллельно для лучшей производительности
+        const [timeData, sourceData, customerData] = await Promise.all([
+          getTimeSeriesData(period, metricType),
+          getSourceData(metricType),
+          getTopCustomersData(metricType)
+        ]);
+        
+        setTimeSeriesData(timeData);
+        setSourceChartData(sourceData);
+        setCustomerChartData(customerData);
       } catch (error) {
-        console.error("Failed to load orders:", error);
+        console.error('Error loading chart data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadData();
-  }, []);
-  
-  useEffect(() => {
-    if (orders.length > 0) {
-      calculateMetrics(orders, period, metricType);
-    }
-  }, [period, metricType, orders]);
-  
-  const calculateMetrics = (ordersData: Order[], selectedPeriod: string, selectedMetricType: string) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // Calculate time periods for filtering
-    const getDateBefore = (days: number) => {
-      const date = new Date(today);
-      date.setDate(date.getDate() - days);
-      return date;
-    };
-    
-    let startDate: Date;
-    let daysToShow: number;
-    
-    // Set start date based on selected period
-    switch (selectedPeriod) {
-      case 'week':
-        startDate = getDateBefore(7);
-        daysToShow = 7;
-        break;
-      case 'month':
-        startDate = getDateBefore(30);
-        daysToShow = 30;
-        break;
-      case 'quarter':
-        startDate = getDateBefore(90);
-        daysToShow = 90;
-        break;
-      default:
-        startDate = getDateBefore(7);
-        daysToShow = 7;
-    }
-    
-    // Calculate orders for statistics
-    const todayOrders = ordersData.filter(o => new Date(o.date) >= today);
-    const yesterdayOrders = ordersData.filter(o => {
-      const orderDate = new Date(o.date);
-      return orderDate >= getDateBefore(1) && orderDate < today;
-    });
-    const lastWeekOrders = ordersData.filter(o => {
-      const orderDate = new Date(o.date);
-      return orderDate >= getDateBefore(7);
-    });
-    const lastMonthOrders = ordersData.filter(o => {
-      const orderDate = new Date(o.date);
-      return orderDate >= getDateBefore(30);
-    });
-    
-    // Calculate summary statistics
-    const totalRevenue = ordersData.reduce((sum, order) => sum + order.totalAmount, 0);
-    const avgOrderValue = ordersData.length ? Math.round(totalRevenue / ordersData.length) : 0;
-    
-    // Calculate repeat purchases
-    const customerOrders: Record<string, number> = {};
-    ordersData.forEach(order => {
-      if (order.customerId) {
-        customerOrders[order.customerId] = (customerOrders[order.customerId] || 0) + 1;
-      }
-    });
-    
-    const repeatCustomers = Object.values(customerOrders).filter(count => count > 1).length;
-    const repeatRate = ordersData.length > 0 
-      ? Math.round((repeatCustomers / Object.keys(customerOrders).length) * 100) 
-      : 0;
-    
-    // Calculate average LTV (Lifetime Value)
-    const customerLTV: Record<string, number> = {};
-    ordersData.forEach(order => {
-      if (order.customerId) {
-        customerLTV[order.customerId] = (customerLTV[order.customerId] || 0) + order.totalAmount;
-      }
-    });
-    
-    const avgLtv = Object.keys(customerLTV).length 
-      ? Math.round(Object.values(customerLTV).reduce((sum, val) => sum + val, 0) / Object.keys(customerLTV).length) 
-      : 0;
-    
-    setStatistics({
-      today: todayOrders.length,
-      yesterday: yesterdayOrders.length,
-      lastWeek: lastWeekOrders.length,
-      lastMonth: lastMonthOrders.length,
-      avgOrderValue: avgOrderValue,
-      conversion: 2.8, // Фиксированное значение, так как реальную конверсию сложно вычислить
-      repeatOrders: repeatRate,
-      avgLtv: avgLtv
-    });
-    
-    // Generate time series data for selected period
-    const days = Array.from({ length: daysToShow }, (_, i) => {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      return date;
-    });
-    
-    const timeSeriesDataCalculated = days.map(date => {
-      const formattedDate = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-      
-      const dayOrders = ordersData.filter(o => {
-        const orderDate = new Date(o.date);
-        return orderDate >= dayStart && orderDate < dayEnd;
-      });
-      
-      return {
-        date: formattedDate,
-        заказы: dayOrders.length,
-        выручка: Math.round(dayOrders.reduce((sum, o) => sum + o.totalAmount, 0) / 1000) // в тысячах
-      };
-    });
-    
-    setTimeSeriesData(timeSeriesDataCalculated);
-    
-    // Calculate source distribution
-    const sourceDistribution = ordersData.reduce((acc: Record<string, any>, order) => {
-      const source = order.source;
-      if (!acc[source]) {
-        acc[source] = { orders: 0, revenue: 0 };
-      }
-      acc[source].orders += 1;
-      acc[source].revenue += order.totalAmount;
-      return acc;
-    }, {});
-    
-    const sourceChartDataCalculated = Object.entries(sourceDistribution).map(([source, data]: [string, any]) => {
-      const sourceName = source === 'website' ? 'Сайт' :
-                         source === 'phone' ? 'Телефон' :
-                         source === 'store' ? 'Магазин' :
-                         source === 'referral' ? 'Реферал' : 'Другое';
-      
-      return {
-        name: sourceName,
-        value: selectedMetricType === 'orders' ? data.orders : Math.round(data.revenue / 1000)
-      };
-    });
-    
-    setSourceChartData(sourceChartDataCalculated);
-    
-    // Calculate customer data for bar chart
-    const customerData = ordersData.reduce((acc: Record<string, any>, order) => {
-      if (!order.customer) return acc;
-      
-      const customerId = order.customerId;
-      if (!customerId) return acc;
-      
-      if (!acc[customerId]) {
-        acc[customerId] = {
-          name: order.customer.name,
-          orders: 0,
-          revenue: 0
-        };
-      }
-      
-      acc[customerId].orders += 1;
-      acc[customerId].revenue += order.totalAmount;
-      
-      return acc;
-    }, {});
-    
-    const customerChartDataCalculated = Object.values(customerData)
-      .sort((a: any, b: any) => 
-        selectedMetricType === 'orders' 
-          ? b.orders - a.orders 
-          : b.revenue - a.revenue
-      )
-      .slice(0, 10)
-      .map((customer: any) => ({
-        name: customer.name,
-        value: selectedMetricType === 'orders' ? customer.orders : Math.round(customer.revenue / 1000)
-      }));
-    
-    setCustomerChartData(customerChartDataCalculated);
-  };
+    loadChartData();
+  }, [period, metricType]);
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Статистика</h1>
+          <p className="text-muted-foreground">Аналитика заказов и продаж</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-3">
+          <Select value={metricType} onValueChange={setMetricType}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Тип метрики" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="orders">Заказы</SelectItem>
+              <SelectItem value="revenue">Выручка</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Период" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Неделя</SelectItem>
+              <SelectItem value="month">Месяц</SelectItem>
+              <SelectItem value="quarter">Квартал</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <p>Загрузка данных...</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Статистика</h1>
-              <p className="text-muted-foreground">Аналитика заказов и продаж</p>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              <Select value={metricType} onValueChange={setMetricType}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Тип метрики" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="orders">Заказы</SelectItem>
-                  <SelectItem value="revenue">Выручка</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Период" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">Неделя</SelectItem>
-                  <SelectItem value="month">Месяц</SelectItem>
-                  <SelectItem value="quarter">Квартал</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
           <div className="grid gap-6 md:grid-cols-2">
             <ChartCard 
               title={`${metricType === 'orders' ? 'Заказы' : 'Выручка'} по дням`}
