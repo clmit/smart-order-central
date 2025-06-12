@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { ChartBar, Calendar, Users, CreditCard, TrendingUp, Target } from 'lucide-react';
 import MetricsCard from '@/components/charts/MetricsCard';
 import ChartCard from '@/components/charts/ChartCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getOrders } from '@/lib/api';
-import { getTimeSeriesData, getSourceData } from '@/lib/statisticsApi';
+import { getTimeSeriesData, getSourceData } from '@/lib/statistics';
 import { Order } from '@/types';
 
 export function Dashboard() {

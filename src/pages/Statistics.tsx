@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { BarChart2, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,7 @@ import {
   TimeSeriesData,
   SourceData,
   CustomerData
-} from '@/lib/statisticsApi';
+} from '@/lib/statistics';
 
 export function Statistics() {
   const [isLoading, setIsLoading] = useState(true);
