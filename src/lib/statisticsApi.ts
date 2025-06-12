@@ -54,12 +54,12 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
 
     // Запрос на количество заказов по периодам с правильной типизацией
     const { data: ordersCount, error: ordersError } = await supabase
-      .rpc('get_orders_statistics' as any, {
+      .rpc('get_orders_statistics', {
         today_date: today.toISOString(),
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      }) as { data: OrdersStatisticsRPC | null; error: any };
+      });
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
@@ -71,15 +71,17 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
       return await getBasicStatisticsFallback();
     }
 
+    const rpcData = ordersCount as OrdersStatisticsRPC;
+
     return {
-      today: ordersCount.today_orders || 0,
-      yesterday: ordersCount.yesterday_orders || 0,
-      lastWeek: ordersCount.week_orders || 0,
-      lastMonth: ordersCount.month_orders || 0,
-      avgOrderValue: Math.round(ordersCount.avg_order_value || 0),
+      today: rpcData.today_orders || 0,
+      yesterday: rpcData.yesterday_orders || 0,
+      lastWeek: rpcData.week_orders || 0,
+      lastMonth: rpcData.month_orders || 0,
+      avgOrderValue: Math.round(rpcData.avg_order_value || 0),
       conversion: 2.8, // Фиксированное значение
-      repeatOrders: Math.round(ordersCount.repeat_rate || 0),
-      avgLtv: Math.round(ordersCount.avg_ltv || 0)
+      repeatOrders: Math.round(rpcData.repeat_rate || 0),
+      avgLtv: Math.round(rpcData.avg_ltv || 0)
     };
   } catch (error) {
     console.error('Error fetching basic statistics:', error);
