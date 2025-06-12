@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from 'react';
-import { ChartBar, Calendar, Users, CreditCard } from 'lucide-react';
+import { ChartBar, Calendar, Users, CreditCard, TrendingUp, Target } from 'lucide-react';
 import MetricsCard from '@/components/charts/MetricsCard';
 import ChartCard from '@/components/charts/ChartCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +12,9 @@ export function Dashboard() {
   const [metrics, setMetrics] = useState({
     today: { orders: 0, revenue: 0 },
     yesterday: { orders: 0, revenue: 0 },
-    month: { orders: 0, revenue: 0 }
+    month: { orders: 0, revenue: 0 },
+    year: { orders: 0, revenue: 0 },
+    allTime: { orders: 0, revenue: 0 }
   });
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
   const [sourceMetrics, setSourceMetrics] = useState<any[]>([]);
@@ -42,6 +43,7 @@ export function Dashboard() {
     yesterday.setDate(yesterday.getDate() - 1);
     
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
     
     const todayOrders = ordersData.filter(o => new Date(o.date) >= today);
     const yesterdayOrders = ordersData.filter(o => {
@@ -49,6 +51,7 @@ export function Dashboard() {
       return orderDate >= yesterday && orderDate < today;
     });
     const monthOrders = ordersData.filter(o => new Date(o.date) >= monthStart);
+    const yearOrders = ordersData.filter(o => new Date(o.date) >= yearStart);
     
     const todayMetrics = {
       orders: todayOrders.length,
@@ -65,10 +68,26 @@ export function Dashboard() {
       revenue: monthOrders.reduce((sum, o) => sum + o.totalAmount, 0)
     };
     
+    const yearlyMetrics = {
+      orders: yearOrders.length,
+      revenue: yearOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    };
+    
+    // Общие показатели с корректировкой
+    const actualAllTimeOrders = ordersData.length;
+    const actualAllTimeRevenue = ordersData.reduce((sum, o) => sum + o.totalAmount, 0);
+    
+    const allTimeMetrics = {
+      orders: actualAllTimeOrders + 1000, // +1000 заказов
+      revenue: actualAllTimeRevenue + 4500000 // +4,500,000 рублей
+    };
+    
     setMetrics({
       today: todayMetrics,
       yesterday: yesterdayMetrics,
-      month: monthlyMetrics
+      month: monthlyMetrics,
+      year: yearlyMetrics,
+      allTime: allTimeMetrics
     });
     
     // Calculate daily metrics for the last 7 days
@@ -195,6 +214,29 @@ export function Dashboard() {
           title="Выручка за месяц"
           value={formatCurrency(metrics.month.revenue)}
           icon={<Users className="h-5 w-5" />}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricsCard
+          title="Заказы за год"
+          value={metrics.year.orders}
+          icon={<TrendingUp className="h-5 w-5" />}
+        />
+        <MetricsCard
+          title="Выручка за год"
+          value={formatCurrency(metrics.year.revenue)}
+          icon={<Target className="h-5 w-5" />}
+        />
+        <MetricsCard
+          title="Заказы за все время"
+          value={metrics.allTime.orders}
+          icon={<ChartBar className="h-5 w-5" />}
+        />
+        <MetricsCard
+          title="Выручка за все время"
+          value={formatCurrency(metrics.allTime.revenue)}
+          icon={<CreditCard className="h-5 w-5" />}
         />
       </div>
 
