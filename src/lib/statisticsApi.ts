@@ -29,6 +29,17 @@ export interface CustomerData {
   value: number;
 }
 
+// Type for RPC function response
+interface OrdersStatisticsRPC {
+  today_orders: number;
+  yesterday_orders: number;
+  week_orders: number;
+  month_orders: number;
+  avg_order_value: number;
+  repeat_rate: number;
+  avg_ltv: number;
+}
+
 // Получение базовой статистики с агрегацией на уровне БД
 export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> => {
   try {
@@ -41,14 +52,14 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
     const lastMonth = new Date(today);
     lastMonth.setDate(lastMonth.getDate() - 30);
 
-    // Запрос на количество заказов по периодам
+    // Запрос на количество заказов по периодам с правильной типизацией
     const { data: ordersCount, error: ordersError } = await supabase
-      .rpc('get_orders_statistics', {
+      .rpc('get_orders_statistics' as any, {
         today_date: today.toISOString(),
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      });
+      }) as { data: OrdersStatisticsRPC | null; error: any };
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
