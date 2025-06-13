@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { BarChart2, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ChartCard from '@/components/charts/ChartCard';
+import YearlyMonthlyStats from '@/components/statistics/YearlyMonthlyStats';
 import { 
   Select,
   SelectContent,
@@ -111,6 +113,9 @@ export function Statistics() {
           </Select>
         </div>
       </div>
+      
+      {/* Новый компонент для годовой и месячной статистики */}
+      <YearlyMonthlyStats />
       
       {isLoading ? (
         <div className="flex justify-center items-center h-64">

@@ -36,3 +36,18 @@ export interface OrdersStatisticsRPC {
   repeat_rate: number;
   avg_ltv: number;
 }
+
+// Новые типы для годовой и месячной статистики
+export interface YearlyData {
+  year: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface MonthlyData {
+  year: number;
+  month: number;
+  monthName: string;
+  orders: number;
+  revenue: number;
+}

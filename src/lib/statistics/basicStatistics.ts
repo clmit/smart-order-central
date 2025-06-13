@@ -17,7 +17,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
 
     // Запрос на количество заказов по периодам с правильной типизацией
     const { data: ordersCount, error: ordersError } = await supabase
-      .rpc('get_orders_statistics' as any, {
+      .rpc('get_orders_statistics', {
         today_date: today.toISOString(),
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
