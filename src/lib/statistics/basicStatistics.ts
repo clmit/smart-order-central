@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { StatisticsMetrics, OrdersStatisticsRPC } from './types';
@@ -21,7 +22,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      });
+      } as any);
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
