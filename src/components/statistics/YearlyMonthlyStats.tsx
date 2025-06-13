@@ -107,8 +107,8 @@ export function YearlyMonthlyStats() {
           </TableHeader>
           <TableBody>
             {yearlyData.map((yearData) => (
-              <>
-                <TableRow key={yearData.year} className="font-medium">
+              <React.Fragment key={yearData.year}>
+                <TableRow className="font-medium">
                   <TableCell>
                     <Button
                       variant="ghost"
@@ -147,7 +147,7 @@ export function YearlyMonthlyStats() {
                     </TableRow>
                   ))
                 )}
-              </>
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>
