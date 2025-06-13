@@ -22,7 +22,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      } as any);
+      });
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
@@ -69,6 +69,7 @@ const getBasicStatisticsFallback = async (): Promise<StatisticsMetrics | null> =
       .from('orders')
       .select('date, total_amount, customer_id')
       .gte('date', lastMonth.toISOString())
+      .limit(50000) // Увеличиваем лимит
       .order('date', { ascending: false });
 
     if (error) throw error;

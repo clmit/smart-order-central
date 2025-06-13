@@ -18,6 +18,7 @@ export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
       .select('date, total_amount')
       .gte('date', startDate.toISOString())
       .lt('date', endDate.toISOString())
+      .limit(50000) // Увеличиваем лимит
       .order('date', { ascending: true });
 
     if (error) throw error;

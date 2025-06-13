@@ -10,6 +10,7 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
+      .limit(50000) // Увеличиваем лимит для получения всех заказов
       .order('date', { ascending: true });
 
     if (error) {
