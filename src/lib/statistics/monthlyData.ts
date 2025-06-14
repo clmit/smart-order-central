@@ -68,7 +68,8 @@ export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
       month: parseInt(month) + 1,
       monthName: monthNames[parseInt(month)],
       orders: data.orders,
-      revenue: Math.round(data.revenue)
+      revenue: Math.round(data.revenue),
+      avgCheck: data.orders > 0 ? Math.round(data.revenue / data.orders) : 0
     }));
   } catch (error) {
     console.error('Error fetching monthly data:', error);

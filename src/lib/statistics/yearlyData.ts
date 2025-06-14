@@ -78,7 +78,8 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
       .map(([year, data]) => ({
         year: parseInt(year),
         orders: data.orders,
-        revenue: Math.round(data.revenue)
+        revenue: Math.round(data.revenue),
+        avgCheck: data.orders > 0 ? Math.round(data.revenue / data.orders) : 0
       }))
       .sort((a, b) => b.year - a.year);
 

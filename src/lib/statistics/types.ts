@@ -42,6 +42,7 @@ export interface YearlyData {
   year: number;
   orders: number;
   revenue: number;
+  avgCheck: number;
 }
 
 export interface MonthlyData {
@@ -50,4 +51,5 @@ export interface MonthlyData {
   monthName: string;
   orders: number;
   revenue: number;
+  avgCheck: number;
 }

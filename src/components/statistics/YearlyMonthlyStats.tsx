@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,6 +102,7 @@ export function YearlyMonthlyStats() {
               <TableHead>Период</TableHead>
               <TableHead className="text-right">Заказы</TableHead>
               <TableHead className="text-right">Выручка</TableHead>
+              <TableHead className="text-right">Средний чек</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -130,6 +130,9 @@ export function YearlyMonthlyStats() {
                   <TableCell className="text-right">
                     {formatCurrency(yearData.revenue)}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(yearData.avgCheck)}
+                  </TableCell>
                 </TableRow>
                 
                 {expandedYears.has(yearData.year) && monthlyData[yearData.year] && (
@@ -143,6 +146,9 @@ export function YearlyMonthlyStats() {
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(monthData.revenue)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(monthData.avgCheck)}
                       </TableCell>
                     </TableRow>
                   ))

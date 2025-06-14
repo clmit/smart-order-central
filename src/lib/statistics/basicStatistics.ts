@@ -24,7 +24,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
         month_date: lastMonth.toISOString()
       });
 
-    if (ordersError) {
+    if (ordersError && ordersError.code !== 'PGRST202') {
       console.log('RPC function not available, falling back to client-side calculation');
       return await getBasicStatisticsFallback();
     }
