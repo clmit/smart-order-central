@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, Order, OrderItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -163,41 +162,50 @@ export const updateCustomer = async (id: string, customerData: Partial<Customer>
   }
 };
 
-// Order API with Supabase
-export const getOrders = async (): Promise<Order[]> => {
+// Функция для получения всех заказов через пагинацию (оптимизированная версия)
+const getAllOrdersPaginated = async (): Promise<Order[]> => {
   try {
-    console.log('Starting to fetch orders...');
+    console.log('Starting to fetch ALL orders with pagination...');
     
-    // First get all orders
-    const { data: ordersData, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('date', { ascending: false });
+    let allOrders: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
     
-    console.log('Orders query result:', { ordersData, ordersError });
-    
-    if (ordersError) {
-      console.error('Orders query error details:', ordersError);
-      throw ordersError;
+    // Получаем все заказы через пагинацию
+    while (true) {
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .order('date', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+      if (ordersError) {
+        console.error('Orders query error details:', ordersError);
+        throw ordersError;
+      }
+      
+      if (!ordersData || ordersData.length === 0) break;
+      
+      allOrders = [...allOrders, ...ordersData];
+      
+      if (ordersData.length < pageSize) break;
+      
+      page++;
     }
     
-    // If no orders, return empty array
-    if (!ordersData || ordersData.length === 0) {
+    console.log(`Found ${allOrders.length} orders through pagination`);
+    
+    if (allOrders.length === 0) {
       console.log('No orders found, returning empty array');
       return [];
     }
     
-    console.log(`Found ${ordersData.length} orders`);
-    
-    // Get all customers for these orders
-    const customerIds = [...new Set(ordersData.map(order => order.customer_id))];
+    // Получаем все клиенты для этих заказов через пагинацию
+    const customerIds = [...new Set(allOrders.map(order => order.customer_id))];
     console.log('Unique customer IDs:', customerIds.length);
     
     let customersData = [];
     if (customerIds.length > 0) {
-      console.log('Fetching customers...');
-      
-      // Process customers in batches to avoid URL length issues
       const batchSize = 100;
       const customerBatches = [];
       for (let i = 0; i < customerIds.length; i += batchSize) {
@@ -219,7 +227,7 @@ export const getOrders = async (): Promise<Order[]> => {
       }
       
       customersData = allCustomers;
-      console.log('Customers query result:', customersData.length);
+      console.log('Customers fetched:', customersData.length);
     }
     
     const customersMap = customersData.reduce((acc, customer) => {
@@ -236,15 +244,12 @@ export const getOrders = async (): Promise<Order[]> => {
       return acc;
     }, {} as Record<string, Customer>);
     
-    // Get order items in batches to avoid URL length issues
-    const orderIds = ordersData.map(order => order.id);
+    // Получаем все order_items через пагинацию
+    const orderIds = allOrders.map(order => order.id);
     console.log('Order IDs for items lookup:', orderIds.length);
     
     let itemsData = [];
     if (orderIds.length > 0) {
-      console.log('Fetching order items in batches...');
-      
-      // Process order IDs in smaller batches to avoid URL length limits
       const batchSize = 50;
       const orderBatches = [];
       for (let i = 0; i < orderIds.length; i += batchSize) {
@@ -266,10 +271,10 @@ export const getOrders = async (): Promise<Order[]> => {
       }
       
       itemsData = allItems;
-      console.log('Order items query result:', itemsData.length);
+      console.log('Order items fetched:', itemsData.length);
     }
     
-    // Group items by order_id
+    // Группируем items по order_id
     const itemsByOrder = itemsData.reduce((acc, item) => {
       if (!acc[item.order_id]) {
         acc[item.order_id] = [];
@@ -285,8 +290,8 @@ export const getOrders = async (): Promise<Order[]> => {
       return acc;
     }, {} as Record<string, OrderItem[]>);
     
-    // Combine all data
-    const finalOrders = ordersData.map(order => ({
+    // Собираем финальные данные
+    const finalOrders = allOrders.map(order => ({
       id: order.id,
       customerId: order.customer_id,
       customer: customersMap[order.customer_id],
@@ -309,6 +314,11 @@ export const getOrders = async (): Promise<Order[]> => {
     });
     return [];
   }
+};
+
+// Order API with Supabase - использует новую пагинированную функцию
+export const getOrders = async (): Promise<Order[]> => {
+  return getAllOrdersPaginated();
 };
 
 export const getOrderById = async (id: string): Promise<Order | undefined> => {
