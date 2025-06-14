@@ -7,10 +7,17 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
   try {
     console.log('Fetching yearly data...');
     
+    // Сначала получаем общее количество заказов
+    const { count: totalOrdersCount } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true });
+
+    console.log(`Total orders in database: ${totalOrdersCount}`);
+
+    // Получаем ВСЕ заказы без лимита
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
-      .limit(50000) // Увеличиваем лимит для получения всех заказов
       .order('date', { ascending: true });
 
     if (error) {
@@ -18,7 +25,7 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
       throw error;
     }
 
-    console.log('Total orders fetched:', orders?.length || 0);
+    console.log('Total orders fetched for yearly analysis:', orders?.length || 0);
     
     if (!orders || orders.length === 0) {
       console.log('No orders found in database');

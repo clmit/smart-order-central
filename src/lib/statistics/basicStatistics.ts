@@ -22,7 +22,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      } as any);
+      });
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
@@ -64,15 +64,23 @@ const getBasicStatisticsFallback = async (): Promise<StatisticsMetrics | null> =
     const lastMonth = new Date(today);
     lastMonth.setDate(lastMonth.getDate() - 30);
 
-    // Получаем только необходимые поля и с ограничениями
+    // Получаем ВСЕ заказы без лимитов для точной статистики
+    const { count: totalOrdersCount } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true });
+
+    console.log(`Total orders in database: ${totalOrdersCount}`);
+
+    // Получаем все заказы без лимита
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount, customer_id')
       .gte('date', lastMonth.toISOString())
-      .limit(50000) // Увеличиваем лимит
       .order('date', { ascending: false });
 
     if (error) throw error;
+
+    console.log(`Orders fetched for statistics: ${orders?.length || 0} out of ${totalOrdersCount} total orders`);
 
     const todayOrders = orders.filter(o => new Date(o.date) >= today);
     const yesterdayOrders = orders.filter(o => {

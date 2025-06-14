@@ -10,18 +10,22 @@ const monthNames = [
 // Получение статистики по месяцам для конкретного года
 export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
   try {
+    console.log(`Fetching monthly data for year: ${year}`);
+    
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year + 1, 0, 1);
 
+    // Получаем все заказы за год без лимита
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
       .gte('date', startDate.toISOString())
       .lt('date', endDate.toISOString())
-      .limit(50000) // Увеличиваем лимит
       .order('date', { ascending: true });
 
     if (error) throw error;
+
+    console.log(`Orders fetched for year ${year}:`, orders?.length || 0);
 
     const monthlyData: Record<number, { orders: number; revenue: number }> = {};
     
