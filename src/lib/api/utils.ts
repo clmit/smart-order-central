@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 
 // Generic pagination utility for fetching all records
 export const getAllRecordsPaginated = async <T>(
-  tableName: string,
+  tableName: 'customers' | 'orders' | 'order_items',
   selectQuery: string = '*',
   orderBy?: { column: string; ascending?: boolean }
 ): Promise<T[]> => {
