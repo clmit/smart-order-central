@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { getAllRecordsPaginated } from '@/lib/api/utils';
 
 export interface BasicStatistics {
   totalOrders: number;
@@ -8,39 +8,16 @@ export interface BasicStatistics {
   averageOrderValue: number;
 }
 
-// Получение базовой статистики через пагинацию для всех данных
+// Get basic statistics through pagination for all data
 export const getBasicStatistics = async (): Promise<BasicStatistics> => {
   try {
-    // Получаем все заказы через пагинацию
-    let allOrders: any[] = [];
-    let page = 0;
-    const pageSize = 1000;
-    
-    while (true) {
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('total_amount')
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-
-      if (error) throw error;
-      
-      if (!orders || orders.length === 0) break;
-      
-      allOrders = [...allOrders, ...orders];
-      
-      if (orders.length < pageSize) break;
-      
-      page++;
-    }
+    // Get all orders through pagination
+    const allOrders = await getAllRecordsPaginated<any>('orders', 'total_amount');
 
     console.log(`Basic statistics: Fetched ${allOrders.length} orders`);
 
-    // Получаем общее количество клиентов
-    const { count: totalCustomers, error: customersError } = await supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: true });
-
-    if (customersError) throw customersError;
+    // Get total number of customers
+    const allCustomers = await getAllRecordsPaginated<any>('customers', 'id');
 
     const totalOrders = allOrders.length;
     const totalRevenue = allOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
@@ -49,7 +26,7 @@ export const getBasicStatistics = async (): Promise<BasicStatistics> => {
     return {
       totalOrders,
       totalRevenue,
-      totalCustomers: totalCustomers || 0,
+      totalCustomers: allCustomers.length,
       averageOrderValue
     };
   } catch (error) {

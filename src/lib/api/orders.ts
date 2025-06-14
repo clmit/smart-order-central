@@ -1,232 +1,43 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Customer, Order, OrderItem } from '@/types';
+import { Order, OrderItem, Customer } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { getAllRecordsPaginated, processBatches } from './utils';
+import { getCustomerById, getCustomerByPhone, createCustomer, updateCustomer } from './customers';
 
-// Customer API
-export const getCustomers = async (): Promise<Customer[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*');
-    
-    if (error) throw error;
-    
-    return data.map(customer => ({
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone,
-      address: customer.address,
-      email: customer.email || undefined,
-      createdAt: customer.created_at,
-      totalOrders: customer.total_orders,
-      totalSpent: Number(customer.total_spent)
-    }));
-  } catch (error) {
-    console.error('Error fetching customers:', error);
-    toast({
-      title: 'Ошибка',
-      description: 'Не удалось загрузить список клиентов',
-      variant: 'destructive',
-    });
-    return [];
-  }
-};
-
-export const getCustomerById = async (id: string): Promise<Customer | undefined> => {
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-    
-    if (error) throw error;
-    if (!data) return undefined;
-    
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      email: data.email || undefined,
-      createdAt: data.created_at,
-      totalOrders: data.total_orders,
-      totalSpent: Number(data.total_spent)
-    };
-  } catch (error) {
-    console.error('Error fetching customer by ID:', error);
-    return undefined;
-  }
-};
-
-export const getCustomerByPhone = async (phone: string): Promise<Customer | undefined> => {
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('phone', phone)
-      .maybeSingle();
-    
-    if (error) throw error;
-    if (!data) return undefined;
-    
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      email: data.email || undefined,
-      createdAt: data.created_at,
-      totalOrders: data.total_orders,
-      totalSpent: Number(data.total_spent)
-    };
-  } catch (error) {
-    console.error('Error fetching customer by phone:', error);
-    return undefined;
-  }
-};
-
-export const createCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt' | 'totalOrders' | 'totalSpent'>): Promise<Customer> => {
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        name: customerData.name,
-        phone: customerData.phone,
-        address: customerData.address,
-        email: customerData.email
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      email: data.email || undefined,
-      createdAt: data.created_at,
-      totalOrders: data.total_orders,
-      totalSpent: Number(data.total_spent)
-    };
-  } catch (error) {
-    console.error('Error creating customer:', error);
-    toast({
-      title: 'Ошибка',
-      description: 'Не удалось создать клиента',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-export const updateCustomer = async (id: string, customerData: Partial<Customer>): Promise<Customer | undefined> => {
-  try {
-    const updateData: any = {};
-    if (customerData.name) updateData.name = customerData.name;
-    if (customerData.phone) updateData.phone = customerData.phone;
-    if (customerData.address) updateData.address = customerData.address;
-    if (customerData.email !== undefined) updateData.email = customerData.email;
-    if (customerData.totalOrders !== undefined) updateData.total_orders = customerData.totalOrders;
-    if (customerData.totalSpent !== undefined) updateData.total_spent = customerData.totalSpent;
-    
-    const { data, error } = await supabase
-      .from('customers')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      email: data.email || undefined,
-      createdAt: data.created_at,
-      totalOrders: data.total_orders,
-      totalSpent: Number(data.total_spent)
-    };
-  } catch (error) {
-    console.error('Error updating customer:', error);
-    toast({
-      title: 'Ошибка',
-      description: 'Не удалось обновить данные клиента',
-      variant: 'destructive',
-    });
-    return undefined;
-  }
-};
-
-// Функция для получения всех заказов через пагинацию (оптимизированная версия)
 const getAllOrdersPaginated = async (): Promise<Order[]> => {
   try {
     console.log('Starting to fetch ALL orders with pagination...');
     
-    let allOrders: any[] = [];
-    let page = 0;
-    const pageSize = 1000;
-    
-    // Получаем все заказы через пагинацию
-    while (true) {
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('date', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-      
-      if (ordersError) {
-        console.error('Orders query error details:', ordersError);
-        throw ordersError;
-      }
-      
-      if (!ordersData || ordersData.length === 0) break;
-      
-      allOrders = [...allOrders, ...ordersData];
-      
-      if (ordersData.length < pageSize) break;
-      
-      page++;
-    }
-    
-    console.log(`Found ${allOrders.length} orders through pagination`);
+    const allOrders = await getAllRecordsPaginated<any>('orders', '*', { column: 'date', ascending: false });
     
     if (allOrders.length === 0) {
       console.log('No orders found, returning empty array');
       return [];
     }
     
-    // Получаем все клиенты для этих заказов через пагинацию
+    // Get all customers for these orders through pagination
     const customerIds = [...new Set(allOrders.map(order => order.customer_id))];
     console.log('Unique customer IDs:', customerIds.length);
     
     let customersData = [];
     if (customerIds.length > 0) {
-      const batchSize = 100;
-      const customerBatches = [];
-      for (let i = 0; i < customerIds.length; i += batchSize) {
-        customerBatches.push(customerIds.slice(i, i + batchSize));
-      }
-      
-      const allCustomers = [];
-      for (const batch of customerBatches) {
-        const { data, error: customersError } = await supabase
-          .from('customers')
-          .select('*')
-          .in('id', batch);
-        
-        if (customersError) {
-          console.error('Customers query error details:', customersError);
-          throw customersError;
+      customersData = await processBatches(
+        customerIds,
+        100,
+        async (batch) => {
+          const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .in('id', batch);
+          
+          if (error) {
+            console.error('Customers query error details:', error);
+            throw error;
+          }
+          return data || [];
         }
-        if (data) allCustomers.push(...data);
-      }
-      
-      customersData = allCustomers;
+      );
       console.log('Customers fetched:', customersData.length);
     }
     
@@ -244,37 +55,32 @@ const getAllOrdersPaginated = async (): Promise<Order[]> => {
       return acc;
     }, {} as Record<string, Customer>);
     
-    // Получаем все order_items через пагинацию
+    // Get all order_items through pagination
     const orderIds = allOrders.map(order => order.id);
     console.log('Order IDs for items lookup:', orderIds.length);
     
     let itemsData = [];
     if (orderIds.length > 0) {
-      const batchSize = 50;
-      const orderBatches = [];
-      for (let i = 0; i < orderIds.length; i += batchSize) {
-        orderBatches.push(orderIds.slice(i, i + batchSize));
-      }
-      
-      const allItems = [];
-      for (const batch of orderBatches) {
-        const { data, error: itemsError } = await supabase
-          .from('order_items')
-          .select('*')
-          .in('order_id', batch);
-        
-        if (itemsError) {
-          console.error('Order items query error details:', itemsError);
-          throw itemsError;
+      itemsData = await processBatches(
+        orderIds,
+        50,
+        async (batch) => {
+          const { data, error } = await supabase
+            .from('order_items')
+            .select('*')
+            .in('order_id', batch);
+          
+          if (error) {
+            console.error('Order items query error details:', error);
+            throw error;
+          }
+          return data || [];
         }
-        if (data) allItems.push(...data);
-      }
-      
-      itemsData = allItems;
+      );
       console.log('Order items fetched:', itemsData.length);
     }
     
-    // Группируем items по order_id
+    // Group items by order_id
     const itemsByOrder = itemsData.reduce((acc, item) => {
       if (!acc[item.order_id]) {
         acc[item.order_id] = [];
@@ -290,7 +96,7 @@ const getAllOrdersPaginated = async (): Promise<Order[]> => {
       return acc;
     }, {} as Record<string, OrderItem[]>);
     
-    // Собираем финальные данные
+    // Assemble final orders
     const finalOrders = allOrders.map(order => ({
       id: order.id,
       customerId: order.customer_id,
@@ -316,7 +122,6 @@ const getAllOrdersPaginated = async (): Promise<Order[]> => {
   }
 };
 
-// Order API with Supabase - использует новую пагинированную функцию
 export const getOrders = async (): Promise<Order[]> => {
   return getAllOrdersPaginated();
 };
@@ -494,7 +299,7 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
     console.error('Error creating order:', error);
     toast({
       title: 'Ошибка',
-      description: 'Не удалось создать заказ: ' + error.message,
+      description: 'Не удалось создать заказ: ' + (error as Error).message,
       variant: 'destructive',
     });
     throw error;
@@ -562,78 +367,6 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
       variant: 'destructive',
     });
     return undefined;
-  }
-};
-
-// Mock API for SMS messaging
-export const sendSms = async (phoneNumbers: string[], message: string): Promise<{ success: boolean, sent: number, failed: number }> => {
-  console.log(`Sending SMS to ${phoneNumbers.length} recipients: "${message}"`);
-  
-  // In a real implementation, this would connect to an SMS API
-  // Here we just simulate success with a small random failure rate
-  const failedCount = Math.floor(phoneNumbers.length * Math.random() * 0.1); // 0-10% failure rate
-  const sentCount = phoneNumbers.length - failedCount;
-  
-  return {
-    success: true,
-    sent: sentCount,
-    failed: failedCount
-  };
-};
-
-// API endpoint for external order creation via Edge Function
-export const handleExternalOrderCreate = async (data: any): Promise<Order> => {
-  const { customerId, customerName, customerPhone, customerAddress, customerEmail, items, source } = data;
-  
-  try {
-    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
-      throw new Error('Отсутствуют обязательные поля');
-    }
-    
-    // Calculate the total amount from the items
-    const totalAmount = items.reduce(
-      (sum: number, item: any) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
-      0
-    );
-    
-    // Create the formatted data with all required fields for the Order type
-    const formattedData: Omit<Order, 'id'> = {
-      customerId: customerId || "", // Will be replaced by createOrder if empty
-      customer: {
-        id: "", // This will be replaced by createOrder
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress || "",
-        email: customerEmail,
-        createdAt: new Date().toISOString(),
-        totalOrders: 0,
-        totalSpent: 0
-      },
-      items: items.map((item: any) => ({
-        id: "", // Will be replaced when created
-        name: item.name,
-        description: item.description || "",
-        price: Number(item.price) || 0,
-        quantity: Number(item.quantity) || 1,
-        photoUrl: item.photoUrl
-      })),
-      date: new Date().toISOString(),
-      source: source || "other",
-      status: "new",
-      totalAmount: totalAmount
-    };
-    
-    // Call the create order method
-    const createdOrder = await createOrder(formattedData);
-    return createdOrder;
-  } catch (error) {
-    console.error("Error creating external order:", error);
-    toast({
-      title: 'Ошибка',
-      description: 'Не удалось обработать внешний заказ: ' + error.message,
-      variant: 'destructive',
-    });
-    throw error;
   }
 };
 

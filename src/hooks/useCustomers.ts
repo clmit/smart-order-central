@@ -1,31 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Customer } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { getAllRecordsPaginated } from '@/lib/api/utils';
 import { toast } from '@/hooks/use-toast';
 
-// Функция для получения всех клиентов через пагинацию
+// Function for getting all customers through pagination
 const getAllCustomers = async (): Promise<Customer[]> => {
-  let allCustomers: any[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  
-  while (true) {
-    const { data: customers, error } = await supabase
-      .from('customers')
-      .select('*')
-      .range(page * pageSize, (page + 1) * pageSize - 1);
-
-    if (error) throw error;
-    
-    if (!customers || customers.length === 0) break;
-    
-    allCustomers = [...allCustomers, ...customers];
-    
-    if (customers.length < pageSize) break;
-    
-    page++;
-  }
+  const allCustomers = await getAllRecordsPaginated<any>('customers');
   
   console.log(`Fetched ${allCustomers.length} customers through pagination`);
   

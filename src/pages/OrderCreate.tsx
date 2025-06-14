@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { OrderSource } from '@/types';
 import CustomerInfoForm from '@/components/order/CustomerInfoForm';
 import OrderItemsSection from '@/components/order/OrderItemsSection';
-import { createOrder } from '@/lib/supabaseApi';
+import { createOrder } from '@/lib/api';
 import { formatOrderId } from '@/lib/orderUtils';
 
 export function OrderCreate() {
