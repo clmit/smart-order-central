@@ -4,7 +4,7 @@ import { ChartBar, Calendar, Users, CreditCard, TrendingUp, Target } from 'lucid
 import MetricsCard from '@/components/charts/MetricsCard';
 import ChartCard from '@/components/charts/ChartCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getOrders } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import { getTimeSeriesData, getSourceData } from '@/lib/statistics';
 import { Order } from '@/types';
 
@@ -22,12 +22,95 @@ export function Dashboard() {
   const [sourceMetrics, setSourceMetrics] = useState<any[]>([]);
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
   
+  // Функция для получения всех заказов через пагинацию
+  const getAllOrdersForDashboard = async () => {
+    let allOrders: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    
+    while (true) {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          customer_id,
+          date,
+          source,
+          status,
+          total_amount,
+          order_number,
+          customers (
+            id,
+            name,
+            phone,
+            address,
+            email,
+            created_at,
+            total_orders,
+            total_spent
+          ),
+          order_items (
+            id,
+            name,
+            description,
+            price,
+            quantity,
+            photo_url
+          )
+        `)
+        .order('date', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (error) throw error;
+      
+      if (!orders || orders.length === 0) break;
+      
+      allOrders = [...allOrders, ...orders];
+      
+      // Если получили меньше записей чем размер страницы, значит это последняя страница
+      if (orders.length < pageSize) break;
+      
+      page++;
+    }
+    
+    console.log(`Fetched ${allOrders.length} orders for dashboard through pagination`);
+    
+    // Преобразуем данные в нужный формат
+    return allOrders.map(order => ({
+      id: order.id,
+      customerId: order.customer_id,
+      customer: order.customers ? {
+        id: order.customers.id,
+        name: order.customers.name,
+        phone: order.customers.phone,
+        address: order.customers.address,
+        email: order.customers.email || undefined,
+        createdAt: order.customers.created_at,
+        totalOrders: order.customers.total_orders,
+        totalSpent: Number(order.customers.total_spent)
+      } : undefined,
+      date: order.date,
+      source: order.source as any,
+      items: order.order_items?.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || undefined,
+        price: Number(item.price),
+        quantity: item.quantity,
+        photoUrl: item.photo_url || undefined
+      })) || [],
+      status: order.status as any,
+      totalAmount: Number(order.total_amount),
+      orderNumber: order.order_number
+    }));
+  };
+  
   useEffect(() => {
     const loadData = async () => {
       try {
         // Загружаем данные параллельно для лучшей производительности
         const [ordersData, weeklyData, sourcesData] = await Promise.all([
-          getOrders(),
+          getAllOrdersForDashboard(),
           getTimeSeriesData('week', 'orders'),
           getSourceData('orders')
         ]);
@@ -86,13 +169,10 @@ export function Dashboard() {
       revenue: yearOrders.reduce((sum, o) => sum + o.totalAmount, 0)
     };
     
-    // Общие показатели с корректировкой
-    const actualAllTimeOrders = ordersData.length;
-    const actualAllTimeRevenue = ordersData.reduce((sum, o) => sum + o.totalAmount, 0);
-    
+    // Правильные общие показатели - теперь используем ВСЕ заказы
     const allTimeMetrics = {
-      orders: actualAllTimeOrders + 1000, // +1000 заказов
-      revenue: actualAllTimeRevenue + 4500000 // +4,500,000 рублей
+      orders: ordersData.length,
+      revenue: ordersData.reduce((sum, o) => sum + o.totalAmount, 0)
     };
     
     setMetrics({

@@ -53,18 +53,23 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
 };
 
 // Функция для получения всех заказов через пагинацию
-const getAllOrders = async (fromDate: Date) => {
+const getAllOrders = async (fromDate?: Date) => {
   let allOrders: any[] = [];
   let page = 0;
   const pageSize = 1000;
   
   while (true) {
-    const { data: orders, error } = await supabase
+    let query = supabase
       .from('orders')
       .select('date, total_amount, customer_id')
-      .gte('date', fromDate.toISOString())
       .order('date', { ascending: false })
       .range(page * pageSize, (page + 1) * pageSize - 1);
+    
+    if (fromDate) {
+      query = query.gte('date', fromDate.toISOString());
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) throw error;
     
