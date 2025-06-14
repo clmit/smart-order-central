@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { StatisticsMetrics, OrdersStatisticsRPC } from './types';
@@ -21,7 +22,7 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
         yesterday_date: yesterday.toISOString(),
         week_date: lastWeek.toISOString(),
         month_date: lastMonth.toISOString()
-      } as any);
+      });
 
     if (ordersError) {
       console.log('RPC function not available, falling back to client-side calculation');
@@ -51,6 +52,36 @@ export const getBasicStatistics = async (): Promise<StatisticsMetrics | null> =>
   }
 };
 
+// Функция для получения всех заказов через пагинацию
+const getAllOrders = async (fromDate: Date) => {
+  let allOrders: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  
+  while (true) {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('date, total_amount, customer_id')
+      .gte('date', fromDate.toISOString())
+      .order('date', { ascending: false })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) throw error;
+    
+    if (!orders || orders.length === 0) break;
+    
+    allOrders = [...allOrders, ...orders];
+    
+    // Если получили меньше записей чем размер страницы, значит это последняя страница
+    if (orders.length < pageSize) break;
+    
+    page++;
+  }
+  
+  console.log(`Fetched ${allOrders.length} orders through pagination`);
+  return allOrders;
+};
+
 // Fallback функция для получения статистики через обычные запросы
 const getBasicStatisticsFallback = async (): Promise<StatisticsMetrics | null> => {
   try {
@@ -63,22 +94,15 @@ const getBasicStatisticsFallback = async (): Promise<StatisticsMetrics | null> =
     const lastMonth = new Date(today);
     lastMonth.setDate(lastMonth.getDate() - 30);
 
-    // Получаем ВСЕ заказы без лимитов для точной статистики
+    // Получаем общее количество заказов
     const { count: totalOrdersCount } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true });
 
     console.log(`Total orders in database: ${totalOrdersCount}`);
 
-    // Получаем все заказы с большим лимитом
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('date, total_amount, customer_id')
-      .gte('date', lastMonth.toISOString())
-      .limit(10000) // Устанавливаем большой лимит
-      .order('date', { ascending: false });
-
-    if (error) throw error;
+    // Получаем все заказы через пагинацию
+    const orders = await getAllOrders(lastMonth);
 
     console.log(`Orders fetched for statistics: ${orders?.length || 0} out of ${totalOrdersCount} total orders`);
 

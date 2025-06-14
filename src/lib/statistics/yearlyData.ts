@@ -2,6 +2,34 @@
 import { supabase } from '@/integrations/supabase/client';
 import { YearlyData } from './types';
 
+// Функция для получения всех заказов через пагинацию
+const getAllOrders = async () => {
+  let allOrders: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  
+  while (true) {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('date, total_amount')
+      .order('date', { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) throw error;
+    
+    if (!orders || orders.length === 0) break;
+    
+    allOrders = [...allOrders, ...orders];
+    
+    // Если получили меньше записей чем размер страницы, значит это последняя страница
+    if (orders.length < pageSize) break;
+    
+    page++;
+  }
+  
+  return allOrders;
+};
+
 // Получение статистики по годам
 export const getYearlyData = async (): Promise<YearlyData[]> => {
   try {
@@ -14,17 +42,8 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
 
     console.log(`Total orders in database: ${totalOrdersCount}`);
 
-    // Получаем ВСЕ заказы с большим лимитом
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('date, total_amount')
-      .limit(10000) // Устанавливаем большой лимит для получения всех данных
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching orders:', error);
-      throw error;
-    }
+    // Получаем ВСЕ заказы через пагинацию
+    const orders = await getAllOrders();
 
     console.log('Total orders fetched for yearly analysis:', orders?.length || 0);
     

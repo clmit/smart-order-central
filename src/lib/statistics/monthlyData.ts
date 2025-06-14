@@ -7,24 +7,46 @@ const monthNames = [
   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
 ];
 
-// Получение статистики по месяцам для конкретного года
-export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
-  try {
-    console.log(`Fetching monthly data for year: ${year}`);
-    
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year + 1, 0, 1);
-
-    // Получаем все заказы за год с большим лимитом
+// Функция для получения всех заказов за год через пагинацию
+const getAllOrdersForYear = async (year: number) => {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year + 1, 0, 1);
+  
+  let allOrders: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  
+  while (true) {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
       .gte('date', startDate.toISOString())
       .lt('date', endDate.toISOString())
-      .limit(10000) // Устанавливаем большой лимит
-      .order('date', { ascending: true });
+      .order('date', { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) throw error;
+    
+    if (!orders || orders.length === 0) break;
+    
+    allOrders = [...allOrders, ...orders];
+    
+    // Если получили меньше записей чем размер страницы, значит это последняя страница
+    if (orders.length < pageSize) break;
+    
+    page++;
+  }
+  
+  return allOrders;
+};
+
+// Получение статистики по месяцам для конкретного года
+export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
+  try {
+    console.log(`Fetching monthly data for year: ${year}`);
+    
+    // Получаем все заказы за год через пагинацию
+    const orders = await getAllOrdersForYear(year);
 
     console.log(`Orders fetched for year ${year}:`, orders?.length || 0);
 
