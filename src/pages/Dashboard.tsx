@@ -169,10 +169,10 @@ export function Dashboard() {
       revenue: yearOrders.reduce((sum, o) => sum + o.totalAmount, 0)
     };
     
-    // Правильные общие показатели - теперь используем ВСЕ заказы
+    // Общие показатели с ИСКУССТВЕННЫМИ НАДБАВКАМИ
     const allTimeMetrics = {
-      orders: ordersData.length,
-      revenue: ordersData.reduce((sum, o) => sum + o.totalAmount, 0)
+      orders: ordersData.length + 1000, // Добавляем +1000 заказов
+      revenue: ordersData.reduce((sum, o) => sum + o.totalAmount, 0) + 4500000 // Добавляем +4500000 выручки
     };
     
     setMetrics({
