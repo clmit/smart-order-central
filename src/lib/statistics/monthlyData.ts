@@ -15,12 +15,13 @@ export const getMonthlyData = async (year: number): Promise<MonthlyData[]> => {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year + 1, 0, 1);
 
-    // Получаем все заказы за год без лимита
+    // Получаем все заказы за год с большим лимитом
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
       .gte('date', startDate.toISOString())
       .lt('date', endDate.toISOString())
+      .limit(10000) // Устанавливаем большой лимит
       .order('date', { ascending: true });
 
     if (error) throw error;

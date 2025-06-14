@@ -14,10 +14,11 @@ export const getYearlyData = async (): Promise<YearlyData[]> => {
 
     console.log(`Total orders in database: ${totalOrdersCount}`);
 
-    // Получаем ВСЕ заказы без лимита
+    // Получаем ВСЕ заказы с большим лимитом
     const { data: orders, error } = await supabase
       .from('orders')
       .select('date, total_amount')
+      .limit(10000) // Устанавливаем большой лимит для получения всех данных
       .order('date', { ascending: true });
 
     if (error) {
