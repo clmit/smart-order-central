@@ -20,6 +20,7 @@ import {
   Home,
   Settings
 } from 'lucide-react';
+import UserMenu from './UserMenu';
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -65,13 +66,16 @@ export function Sidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-4">
-        <button 
-          className="w-full flex items-center p-2 text-crm-gray-dark hover:bg-crm-gray-light rounded-md"
-          onClick={() => navigate('/settings')}
-        >
-          <Settings size={20} className="mr-2" />
-          <span>Настройки</span>
-        </button>
+        <div className="flex items-center justify-between">
+          <button 
+            className="flex items-center p-2 text-crm-gray-dark hover:bg-crm-gray-light rounded-md"
+            onClick={() => navigate('/settings')}
+          >
+            <Settings size={20} className="mr-2" />
+            <span>Настройки</span>
+          </button>
+          <UserMenu />
+        </div>
       </SidebarFooter>
     </SidebarContainer>
   );
