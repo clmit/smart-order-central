@@ -13,7 +13,9 @@ export {
   getOrderById,
   createOrder,
   updateOrder,
-  deleteOrder
+  deleteOrder,
+  getOrdersPaginated,
+  type PaginatedOrdersResponse
 } from './api/orders';
 
 export {

@@ -1,85 +1,73 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderItem, Customer } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { getAllRecordsPaginated, processBatches } from './utils';
 import { getCustomerById, getCustomerByPhone, createCustomer, updateCustomer } from './customers';
 
-const getAllOrdersPaginated = async (): Promise<Order[]> => {
+export interface PaginatedOrdersResponse {
+  orders: Order[];
+  total: number;
+  totalPages: number;
+}
+
+// Optimized function to get orders with server-side pagination
+export const getOrdersPaginated = async (
+  page: number = 1, 
+  limit: number = 10,
+  searchTerm?: string,
+  statusFilter?: string
+): Promise<PaginatedOrdersResponse> => {
   try {
-    console.log('Starting to fetch ALL orders with pagination...');
+    console.log(`Fetching orders page ${page} with limit ${limit}`);
     
-    const allOrders = await getAllRecordsPaginated<any>('orders', '*', { column: 'date', ascending: false });
-    
-    if (allOrders.length === 0) {
-      console.log('No orders found, returning empty array');
-      return [];
+    let query = supabase
+      .from('orders')
+      .select('*, customers(*)', { count: 'exact' })
+      .order('date', { ascending: false });
+
+    // Apply filters
+    if (searchTerm && searchTerm.trim() !== '') {
+      const term = searchTerm.trim();
+      // Search in customer phone or name, or order ID
+      query = query.or(`customers.name.ilike.%${term}%,customers.phone.ilike.%${term}%,id.ilike.%${term}%`);
     }
-    
-    // Get all customers for these orders through pagination
-    const customerIds = [...new Set(allOrders.map(order => order.customer_id))];
-    console.log('Unique customer IDs:', customerIds.length);
-    
-    let customersData = [];
-    if (customerIds.length > 0) {
-      customersData = await processBatches(
-        customerIds,
-        100,
-        async (batch) => {
-          const { data, error } = await supabase
-            .from('customers')
-            .select('*')
-            .in('id', batch);
-          
-          if (error) {
-            console.error('Customers query error details:', error);
-            throw error;
-          }
-          return data || [];
-        }
-      );
-      console.log('Customers fetched:', customersData.length);
+
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
     }
-    
-    const customersMap = customersData.reduce((acc, customer) => {
-      acc[customer.id] = {
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
-        email: customer.email || undefined,
-        createdAt: customer.created_at,
-        totalOrders: customer.total_orders,
-        totalSpent: Number(customer.total_spent)
-      };
-      return acc;
-    }, {} as Record<string, Customer>);
-    
-    // Get all order_items through pagination
-    const orderIds = allOrders.map(order => order.id);
-    console.log('Order IDs for items lookup:', orderIds.length);
-    
+
+    // Apply pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
+
+    const { data: ordersData, error, count } = await query;
+
+    if (error) {
+      console.error('Orders query error:', error);
+      throw error;
+    }
+
+    if (!ordersData) {
+      return { orders: [], total: 0, totalPages: 0 };
+    }
+
+    // Get order items for the current page orders
+    const orderIds = ordersData.map(order => order.id);
     let itemsData = [];
-    if (orderIds.length > 0) {
-      itemsData = await processBatches(
-        orderIds,
-        50,
-        async (batch) => {
-          const { data, error } = await supabase
-            .from('order_items')
-            .select('*')
-            .in('order_id', batch);
-          
-          if (error) {
-            console.error('Order items query error details:', error);
-            throw error;
-          }
-          return data || [];
-        }
-      );
-      console.log('Order items fetched:', itemsData.length);
-    }
     
+    if (orderIds.length > 0) {
+      const { data: items, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+      
+      if (itemsError) {
+        console.error('Order items query error:', itemsError);
+        throw itemsError;
+      }
+      itemsData = items || [];
+    }
+
     // Group items by order_id
     const itemsByOrder = itemsData.reduce((acc, item) => {
       if (!acc[item.order_id]) {
@@ -95,12 +83,21 @@ const getAllOrdersPaginated = async (): Promise<Order[]> => {
       });
       return acc;
     }, {} as Record<string, OrderItem[]>);
-    
-    // Assemble final orders
-    const finalOrders = allOrders.map(order => ({
+
+    // Build final orders
+    const orders = ordersData.map(order => ({
       id: order.id,
       customerId: order.customer_id,
-      customer: customersMap[order.customer_id],
+      customer: order.customers ? {
+        id: order.customers.id,
+        name: order.customers.name,
+        phone: order.customers.phone,
+        address: order.customers.address,
+        email: order.customers.email || undefined,
+        createdAt: order.customers.created_at,
+        totalOrders: order.customers.total_orders,
+        totalSpent: Number(order.customers.total_spent)
+      } : undefined,
       date: order.date,
       source: order.source as any,
       items: itemsByOrder[order.id] || [],
@@ -108,22 +105,28 @@ const getAllOrdersPaginated = async (): Promise<Order[]> => {
       totalAmount: Number(order.total_amount),
       orderNumber: order.order_number
     }));
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    console.log(`Successfully fetched ${orders.length} orders from page ${page}, total: ${total}`);
     
-    console.log('Successfully processed all orders:', finalOrders.length);
-    return finalOrders;
+    return { orders, total, totalPages };
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('Error fetching paginated orders:', error);
     toast({
       title: 'Ошибка',
       description: 'Не удалось загрузить заказы',
       variant: 'destructive',
     });
-    return [];
+    return { orders: [], total: 0, totalPages: 0 };
   }
 };
 
+// Keep the old function for backward compatibility but make it use pagination internally
 export const getOrders = async (): Promise<Order[]> => {
-  return getAllOrdersPaginated();
+  const result = await getOrdersPaginated(1, 50); // Get first 50 orders for compatibility
+  return result.orders;
 };
 
 export const getOrderById = async (id: string): Promise<Order | undefined> => {
