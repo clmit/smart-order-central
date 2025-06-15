@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пример интеграции с CRM</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Форма заказа с интеграцией CRM</h1>
+    
+    <form id="orderForm">
+        <div class="form-group">
+            <label for="crmUrl">URL вашей CRM системы:</label>
+            <input type="url" id="crmUrl" value="https://your-crm.lovable.app" required>
+            <small>Замените на URL вашей CRM системы</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Имя клиента:</label>
+            <input type="text" id="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="tel">Телефон:</label>
+            <input type="tel" id="tel" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="add">Адрес:</label>
+            <textarea id="add"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email">
+        </div>
+        
+        <div class="form-group">
+            <label for="title">Название товара:</label>
+            <input type="text" id="title" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="quan">Количество:</label>
+            <input type="number" id="quan" value="1" min="1" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="price">Цена:</label>
+            <input type="number" id="price" step="0.01" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="promo">Промокод:</label>
+            <input type="text" id="promo">
+        </div>
+        
+        <button type="submit">Отправить заказ</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <script>
+        // Код интеграции с CRM (скопируйте из externalOrderIntegration.js)
+        async function sendOrderToCRM(formData, crmBaseUrl) {
+            try {
+                const orderData = {
+                    customerName: formData.name,
+                    customerPhone: formData.tel,
+                    customerAddress: formData.add || "",
+                    customerEmail: formData.email || "",
+                    source: "website",
+                    items: [
+                        {
+                            name: formData.title,
+                            description: formData.promo ? `Промокод: ${formData.promo}` : "",
+                            price: parseFloat(formData.price) || 0,
+                            quantity: parseInt(formData.quan) || 1
+                        }
+                    ]
+                };
+
+                console.log('Отправляем заказ в CRM:', orderData);
+
+                const encodedData = encodeURIComponent(JSON.stringify(orderData));
+                
+                const response = await fetch(`${crmBaseUrl}/api/orders/create?data=${encodedData}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Заказ успешно создан в CRM:', result);
+                
+                return {
+                    success: true,
+                    order: result,
+                    message: 'Заказ успешно создан в CRM'
+                };
+
+            } catch (error) {
+                console.error('Ошибка при создании заказа в CRM:', error);
+                return {
+                    success: false,
+                    error: error.message,
+                    message: 'Ошибка при создании заказа в CRM'
+                };
+            }
+        }
+
+        // Обработчик формы
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Отправляем заказ...</p>';
+            
+            // Собираем данные формы
+            const formData = {
+                name: document.getElementById('name').value,
+                tel: document.getElementById('tel').value,
+                add: document.getElementById('add').value,
+                email: document.getElementById('email').value,
+                title: document.getElementById('title').value,
+                quan: document.getElementById('quan').value,
+                price: document.getElementById('price').value,
+                promo: document.getElementById('promo').value
+            };
+            
+            const crmUrl = document.getElementById('crmUrl').value;
+            
+            // Отправляем в CRM
+            const result = await sendOrderToCRM(formData, crmUrl);
+            
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        <h3>✅ Успех!</h3>
+                        <p>${result.message}</p>
+                        <p><strong>ID заказа:</strong> ${result.order.id}</p>
+                        <p><strong>Номер заказа:</strong> ${result.order.orderNumber}</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Ошибка</h3>
+                        <p>${result.message}</p>
+                        <p><strong>Детали:</strong> ${result.error}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
