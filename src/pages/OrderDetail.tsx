@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getOrderById, updateOrder, deleteOrder } from '@/lib/api';
 import { Order, OrderItem } from '@/types';
 import ImageUpload from '@/components/order/ImageUpload';
+import ImageZoom from '@/components/ui/image-zoom';
 import { formatOrderId } from '@/lib/orderUtils';
 import {
   Select,
@@ -292,40 +293,6 @@ export function OrderDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/orders')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Назад к заказам
-        </Button>
-        
-        <div className="ml-auto flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
-                Отменить
-              </Button>
-              <Button onClick={handleSaveOrder} disabled={isSubmitting}>
-                <Save className="h-4 w-4 mr-2" />
-                Сохранить
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button 
-                variant="destructive" 
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Удалить
-              </Button>
-              <Button onClick={() => setIsEditing(true)}>
-                Редактировать
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Delete confirmation dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -446,11 +413,17 @@ export function OrderDetail() {
                     ) : (
                       <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                         {item.photoUrl ? (
-                          <img 
+                          <ImageZoom 
                             src={item.photoUrl} 
-                            alt={item.name} 
-                            className="h-full w-full object-cover rounded-lg"
-                          />
+                            alt={item.name}
+                            className="h-full w-full"
+                          >
+                            <img 
+                              src={item.photoUrl} 
+                              alt={item.name} 
+                              className="h-full w-full object-cover rounded-lg"
+                            />
+                          </ImageZoom>
                         ) : (
                           <span className="text-gray-500 text-sm">Фото не загружено</span>
                         )}

@@ -5,6 +5,7 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import heic2any from 'heic2any';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ImageZoom from '@/components/ui/image-zoom';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -117,11 +118,17 @@ export const ImageUpload = ({ onImageUploaded, currentImage }: ImageUploadProps)
     <div className="space-y-2">
       {preview ? (
         <div className="relative">
-          <img 
+          <ImageZoom 
             src={preview} 
-            alt="Превью фото товара" 
-            className="object-cover w-full h-40 rounded-md" 
-          />
+            alt="Превью фото товара"
+            className="w-full h-40"
+          >
+            <img 
+              src={preview} 
+              alt="Превью фото товара" 
+              className="object-cover w-full h-40 rounded-md" 
+            />
+          </ImageZoom>
           <Button
             type="button"
             variant="destructive"
