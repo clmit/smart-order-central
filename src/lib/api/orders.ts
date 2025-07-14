@@ -36,11 +36,12 @@ export const getOrdersPaginated = async (
       
       const customerIds = matchingCustomers?.map(c => c.id) || [];
       
-      // Search in order ID or customer IDs
+      // Filter by matching customer IDs if any found
       if (customerIds.length > 0) {
-        query = query.or(`id.ilike.%${term}%,customer_id.in.(${customerIds.join(',')})`);
+        query = query.in('customer_id', customerIds);
       } else {
-        query = query.ilike('id', `%${term}%`);
+        // If no customers found, return empty result
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
       }
     }
 
