@@ -27,8 +27,8 @@ export const getOrdersPaginated = async (
     // Apply filters
     if (searchTerm && searchTerm.trim() !== '') {
       const term = searchTerm.trim();
-      // Search in customer phone or name, or order ID
-      query = query.or(`customers.name.ilike.%${term}%,customers.phone.ilike.%${term}%,id.ilike.%${term}%`);
+      // Search in customer phone or name, or order ID  
+      query = query.or(`customers.name.ilike.%${term}%,customers.phone.ilike.%${term}%,id::text.ilike.%${term}%`);
     }
 
     if (statusFilter && statusFilter !== 'all') {
