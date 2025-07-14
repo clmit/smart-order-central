@@ -28,50 +28,23 @@ export const getOrdersPaginated = async (
     if (searchTerm && searchTerm.trim() !== '') {
       const term = searchTerm.trim();
       
-      // Normalize phone number - extract only digits
-      const normalizedPhone = term.replace(/\D/g, '');
+      // Extract only digits for phone search
+      const digitsOnly = term.replace(/\D/g, '');
       
-      // Create search patterns for phone
-      let phoneSearchPattern = '';
-      if (normalizedPhone.length >= 10) {
-        // If we have at least 10 digits, try different phone formats
-        const patterns = [];
-        
-        // Original normalized number
-        patterns.push(`*${normalizedPhone}*`);
-        
-        // If starts with 8, also try with +7
-        if (normalizedPhone.startsWith('8')) {
-          const with7 = '7' + normalizedPhone.substring(1);
-          patterns.push(`*${with7}*`);
-        }
-        
-        // If starts with 7, also try with 8
-        if (normalizedPhone.startsWith('7')) {
-          const with8 = '8' + normalizedPhone.substring(1);
-          patterns.push(`*${with8}*`);
-        }
-        
-        phoneSearchPattern = patterns.join(',');
-      }
-      
-      // Build search query
       let searchConditions = [`name.ilike.%${term}%`];
       
-      if (phoneSearchPattern) {
-        // Use regex to find phones containing the normalized digits
-        searchConditions.push(`phone.like.${phoneSearchPattern.split(',')[0]}`);
+      // If we have digits, search for phone numbers containing these digits
+      if (digitsOnly.length >= 4) {
+        searchConditions.push(`phone.ilike.%${digitsOnly}%`);
         
-        // Add additional patterns
-        phoneSearchPattern.split(',').slice(1).forEach(pattern => {
-          searchConditions.push(`phone.like.${pattern}`);
-        });
+        // Also search for the original term in case it has formatting
+        searchConditions.push(`phone.ilike.%${term}%`);
       } else {
-        // Fallback to simple phone search
+        // Just search phone as-is for short terms
         searchConditions.push(`phone.ilike.%${term}%`);
       }
       
-      // First, find customers matching the search term
+      // Find customers matching the search term
       const { data: matchingCustomers } = await supabase
         .from('customers')
         .select('id')
