@@ -28,11 +28,54 @@ export const getOrdersPaginated = async (
     if (searchTerm && searchTerm.trim() !== '') {
       const term = searchTerm.trim();
       
+      // Normalize phone number - extract only digits
+      const normalizedPhone = term.replace(/\D/g, '');
+      
+      // Create search patterns for phone
+      let phoneSearchPattern = '';
+      if (normalizedPhone.length >= 10) {
+        // If we have at least 10 digits, try different phone formats
+        const patterns = [];
+        
+        // Original normalized number
+        patterns.push(`*${normalizedPhone}*`);
+        
+        // If starts with 8, also try with +7
+        if (normalizedPhone.startsWith('8')) {
+          const with7 = '7' + normalizedPhone.substring(1);
+          patterns.push(`*${with7}*`);
+        }
+        
+        // If starts with 7, also try with 8
+        if (normalizedPhone.startsWith('7')) {
+          const with8 = '8' + normalizedPhone.substring(1);
+          patterns.push(`*${with8}*`);
+        }
+        
+        phoneSearchPattern = patterns.join(',');
+      }
+      
+      // Build search query
+      let searchConditions = [`name.ilike.%${term}%`];
+      
+      if (phoneSearchPattern) {
+        // Use regex to find phones containing the normalized digits
+        searchConditions.push(`phone.like.${phoneSearchPattern.split(',')[0]}`);
+        
+        // Add additional patterns
+        phoneSearchPattern.split(',').slice(1).forEach(pattern => {
+          searchConditions.push(`phone.like.${pattern}`);
+        });
+      } else {
+        // Fallback to simple phone search
+        searchConditions.push(`phone.ilike.%${term}%`);
+      }
+      
       // First, find customers matching the search term
       const { data: matchingCustomers } = await supabase
         .from('customers')
         .select('id')
-        .or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
+        .or(searchConditions.join(','));
       
       const customerIds = matchingCustomers?.map(c => c.id) || [];
       
