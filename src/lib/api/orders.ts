@@ -27,8 +27,21 @@ export const getOrdersPaginated = async (
     // Apply filters
     if (searchTerm && searchTerm.trim() !== '') {
       const term = searchTerm.trim();
-      // Search in customer phone or name, or order ID  
-      query = query.or(`customers.name.ilike.%${term}%,customers.phone.ilike.%${term}%,id.ilike.%${term}%`);
+      
+      // First, find customers matching the search term
+      const { data: matchingCustomers } = await supabase
+        .from('customers')
+        .select('id')
+        .or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
+      
+      const customerIds = matchingCustomers?.map(c => c.id) || [];
+      
+      // Search in order ID or customer IDs
+      if (customerIds.length > 0) {
+        query = query.or(`id.ilike.%${term}%,customer_id.in.(${customerIds.join(',')})`);
+      } else {
+        query = query.ilike('id', `%${term}%`);
+      }
     }
 
     if (statusFilter && statusFilter !== 'all') {
