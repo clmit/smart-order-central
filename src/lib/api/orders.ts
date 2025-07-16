@@ -33,15 +33,11 @@ export const getOrdersPaginated = async (
       
       let searchConditions = [`name.ilike.%${term}%`];
       
-      // If we have digits, search for phone numbers containing these digits
+      // For phone search, use regex to normalize both sides to digits only
       if (digitsOnly.length >= 4) {
-        searchConditions.push(`phone.ilike.%${digitsOnly}%`);
-        
-        // Also search for the original term in case it has formatting
-        searchConditions.push(`phone.ilike.%${term}%`);
-      } else {
-        // Just search phone as-is for short terms
-        searchConditions.push(`phone.ilike.%${term}%`);
+        // Search for phones where extracted digits match
+        // Using regexp_replace to extract only digits from database phone numbers
+        searchConditions.push(`regexp_replace(phone, '[^0-9]', '', 'g').like.%${digitsOnly}%`);
       }
       
       // Find customers matching the search term
