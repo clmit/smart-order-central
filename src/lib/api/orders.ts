@@ -39,7 +39,7 @@ export const getOrdersPaginated = async (
         // 1. Search for the original term as-is (handles exact matches)
         searchConditions.push(`phone.ilike.%${term}%`);
         
-        // 2. For Russian phone numbers, extract meaningful parts
+        // 2. For longer numbers, search by significant parts
         if (digitsOnly.length >= 10) {
           let phoneDigits = digitsOnly;
           
@@ -50,21 +50,20 @@ export const getOrdersPaginated = async (
             phoneDigits = phoneDigits.substring(1);
           }
           
-          // Now phoneDigits should be like "9859298474" (10 digits)
+          // Extract parts for Russian phone numbers (like 9859298474)
           if (phoneDigits.length === 10) {
             const areaCode = phoneDigits.substring(0, 3); // "985"
             const first3 = phoneDigits.substring(3, 6);   // "929"
             const last4 = phoneDigits.substring(6);       // "8474"
             
-            // Search for pattern like "985) 929-8474" or "985 929 8474"
-            searchConditions.push(`phone.ilike.%${areaCode}%${first3}%${last4}%`);
+            // Search for each part separately to handle formatting
+            searchConditions.push(`phone.ilike.%${areaCode}%`);
+            searchConditions.push(`phone.ilike.%${first3}%`);
+            searchConditions.push(`phone.ilike.%${last4}%`);
           }
-        }
-        
-        // 3. Search for last 4 digits (always works)
-        if (digitsOnly.length >= 4) {
-          const last4 = digitsOnly.slice(-4);
-          searchConditions.push(`phone.ilike.%${last4}%`);
+        } else {
+          // For shorter numbers, just search as-is
+          searchConditions.push(`phone.ilike.%${digitsOnly}%`);
         }
       }
       
