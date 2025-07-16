@@ -34,25 +34,37 @@ export const getOrdersPaginated = async (
       
       let searchConditions = [`name.ilike.%${term}%`];
       
-      // For phone search, break digits into chunks and search for each
+      // For phone search, try different approaches
       if (digitsOnly.length >= 4) {
-        // Search for the original term as-is
+        // 1. Search for the original term as-is (handles exact matches)
         searchConditions.push(`phone.ilike.%${term}%`);
         
-        // Search for the digit sequence
-        searchConditions.push(`phone.ilike.%${digitsOnly}%`);
-        
-        // For longer numbers, also search for parts (useful for formatted numbers)
-        if (digitsOnly.length >= 7) {
-          // Last 7 digits (local number)
-          const last7 = digitsOnly.slice(-7);
-          searchConditions.push(`phone.ilike.%${last7}%`);
+        // 2. For Russian phone numbers, extract meaningful parts
+        if (digitsOnly.length >= 10) {
+          let phoneDigits = digitsOnly;
           
-          // Last 10 digits (number without country code)
-          if (digitsOnly.length >= 10) {
-            const last10 = digitsOnly.slice(-10);
-            searchConditions.push(`phone.ilike.%${last10}%`);
+          // Handle Russian format: remove leading 8 or 7
+          if (phoneDigits.startsWith('8')) {
+            phoneDigits = phoneDigits.substring(1);
+          } else if (phoneDigits.startsWith('7')) {
+            phoneDigits = phoneDigits.substring(1);
           }
+          
+          // Now phoneDigits should be like "9859298474" (10 digits)
+          if (phoneDigits.length === 10) {
+            const areaCode = phoneDigits.substring(0, 3); // "985"
+            const first3 = phoneDigits.substring(3, 6);   // "929"
+            const last4 = phoneDigits.substring(6);       // "8474"
+            
+            // Search for pattern like "985) 929-8474" or "985 929 8474"
+            searchConditions.push(`phone.ilike.%${areaCode}%${first3}%${last4}%`);
+          }
+        }
+        
+        // 3. Search for last 4 digits (always works)
+        if (digitsOnly.length >= 4) {
+          const last4 = digitsOnly.slice(-4);
+          searchConditions.push(`phone.ilike.%${last4}%`);
         }
       }
       
