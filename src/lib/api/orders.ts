@@ -27,24 +27,29 @@ export const getOrdersPaginated = async (
     // Apply filters
     if (searchTerm && searchTerm.trim() !== '') {
       const term = searchTerm.trim();
-      
+      console.log('Search term:', term);
       // Extract only digits for phone search
       const digitsOnly = term.replace(/\D/g, '');
+      console.log('Digits only:', digitsOnly);
       
       let searchConditions = [`name.ilike.%${term}%`];
       
-      // For phone search, use regex to normalize both sides to digits only
+      // For phone search, search for any occurrence of digits
       if (digitsOnly.length >= 4) {
-        // Search for phones where extracted digits match
-        // Using regexp_replace to extract only digits from database phone numbers
-        searchConditions.push(`regexp_replace(phone, '[^0-9]', '', 'g').like.%${digitsOnly}%`);
+        // Simple approach: search for the digit sequence in phone field
+        searchConditions.push(`phone.ilike.%${digitsOnly}%`);
       }
       
+      console.log('Search conditions:', searchConditions);
+      
       // Find customers matching the search term
-      const { data: matchingCustomers } = await supabase
+      const { data: matchingCustomers, error: customersError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, name, phone')
         .or(searchConditions.join(','));
+      
+      console.log('Matching customers:', matchingCustomers);
+      console.log('Customers error:', customersError);
       
       const customerIds = matchingCustomers?.map(c => c.id) || [];
       
