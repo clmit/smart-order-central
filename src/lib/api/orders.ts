@@ -78,8 +78,10 @@ export const getOrdersPaginated = async (
       
       console.log('Matching customers:', matchingCustomers);
       console.log('Customers error:', customersError);
+      console.log('Customer IDs found:', matchingCustomers?.map(c => c.id));
       
       const customerIds = matchingCustomers?.map(c => c.id) || [];
+      console.log('Final customer IDs for orders filter:', customerIds);
       
       // Filter by matching customer IDs if any found
       if (customerIds.length > 0) {
