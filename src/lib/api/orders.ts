@@ -34,10 +34,26 @@ export const getOrdersPaginated = async (
       
       let searchConditions = [`name.ilike.%${term}%`];
       
-      // For phone search, search for any occurrence of digits
+      // For phone search, break digits into chunks and search for each
       if (digitsOnly.length >= 4) {
-        // Simple approach: search for the digit sequence in phone field
+        // Search for the original term as-is
+        searchConditions.push(`phone.ilike.%${term}%`);
+        
+        // Search for the digit sequence
         searchConditions.push(`phone.ilike.%${digitsOnly}%`);
+        
+        // For longer numbers, also search for parts (useful for formatted numbers)
+        if (digitsOnly.length >= 7) {
+          // Last 7 digits (local number)
+          const last7 = digitsOnly.slice(-7);
+          searchConditions.push(`phone.ilike.%${last7}%`);
+          
+          // Last 10 digits (number without country code)
+          if (digitsOnly.length >= 10) {
+            const last10 = digitsOnly.slice(-10);
+            searchConditions.push(`phone.ilike.%${last10}%`);
+          }
+        }
       }
       
       console.log('Search conditions:', searchConditions);
