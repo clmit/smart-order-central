@@ -26,69 +26,89 @@ export const getOrdersPaginated = async (
 
     // Apply filters
     if (searchTerm && searchTerm.trim() !== '') {
-      const term = searchTerm.trim();
-      console.log('Search term:', term);
-      // Extract only digits for phone search
-      const digitsOnly = term.replace(/\D/g, '');
-      console.log('Digits only:', digitsOnly);
+      console.log('Search term:', searchTerm);
       
-      let searchConditions = [`name.ilike.%${term}%`];
+      // Use RPC function for phone-normalized search
+      const { data: searchResults, error: searchError } = await supabase
+        .rpc('search_orders_by_phone', { search_term: searchTerm })
+        .range((page - 1) * limit, page * limit - 1);
       
-      // For phone search, try different approaches
-      if (digitsOnly.length >= 4) {
-        // 1. Search for the original term as-is (handles exact matches)
-        searchConditions.push(`phone.ilike.%${term}%`);
-        
-        // 2. For longer numbers, search by significant parts
-        if (digitsOnly.length >= 10) {
-          let phoneDigits = digitsOnly;
-          
-          // Handle Russian format: remove leading 8 or 7
-          if (phoneDigits.startsWith('8')) {
-            phoneDigits = phoneDigits.substring(1);
-          } else if (phoneDigits.startsWith('7')) {
-            phoneDigits = phoneDigits.substring(1);
-          }
-          
-          // Extract parts for Russian phone numbers (like 9859298474)
-          if (phoneDigits.length === 10) {
-            const areaCode = phoneDigits.substring(0, 3); // "985"
-            const first3 = phoneDigits.substring(3, 6);   // "929"
-            const last4 = phoneDigits.substring(6);       // "8474"
-            
-            // Search for each part separately to handle formatting
-            searchConditions.push(`phone.ilike.%${areaCode}%`);
-            searchConditions.push(`phone.ilike.%${first3}%`);
-            searchConditions.push(`phone.ilike.%${last4}%`);
-          }
-        } else {
-          // For shorter numbers, just search as-is
-          searchConditions.push(`phone.ilike.%${digitsOnly}%`);
+      if (searchError) {
+        console.error('Search error:', searchError);
+        throw searchError;
+      }
+      
+      console.log('Search results:', searchResults);
+      
+      if (!searchResults || searchResults.length === 0) {
+        return { orders: [], total: 0, totalPages: 0 };
+      }
+      
+      // Transform the RPC results to match the expected format
+      const orders = searchResults.map((row: any) => ({
+        id: row.order_id,
+        customerId: row.customer_id,
+        customer: {
+          id: row.customer_id,
+          name: row.customer_name,
+          phone: row.customer_phone,
+          address: row.customer_address,
+          email: row.customer_email || undefined,
+          createdAt: row.date, // We'll need to get the actual customer created_at if needed
+          totalOrders: 0, // These would need additional queries if needed
+          totalSpent: 0
+        },
+        date: row.date,
+        source: row.source as any,
+        items: [], // Items will be fetched below
+        status: row.status as any,
+        totalAmount: Number(row.total_amount),
+        orderNumber: row.order_number
+      }));
+      
+      // Get order items for the search results
+      const orderIds = orders.map(order => order.id);
+      const { data: items, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+      
+      if (itemsError) {
+        console.error('Order items query error:', itemsError);
+        throw itemsError;
+      }
+      
+      // Group items by order_id
+      const itemsByOrder = (items || []).reduce((acc, item) => {
+        if (!acc[item.order_id]) {
+          acc[item.order_id] = [];
         }
-      }
+        acc[item.order_id].push({
+          id: item.id,
+          name: item.name,
+          description: item.description || undefined,
+          price: Number(item.price),
+          quantity: item.quantity,
+          photoUrl: item.photo_url || undefined
+        });
+        return acc;
+      }, {} as Record<string, OrderItem[]>);
       
-      console.log('Search conditions:', searchConditions);
+      // Add items to orders
+      orders.forEach(order => {
+        order.items = itemsByOrder[order.id] || [];
+      });
       
-      // Find customers matching the search term
-      const { data: matchingCustomers, error: customersError } = await supabase
-        .from('customers')
-        .select('id, name, phone')
-        .or(searchConditions.join(','));
+      // Get total count for pagination (run the search again with count)
+      const { count: totalCount } = await supabase
+        .rpc('search_orders_by_phone', { search_term: searchTerm }, { count: 'exact', head: true });
       
-      console.log('Matching customers:', matchingCustomers);
-      console.log('Customers error:', customersError);
-      console.log('Customer IDs found:', matchingCustomers?.map(c => c.id));
+      const total = totalCount || 0;
+      const totalPages = Math.ceil(total / limit);
       
-      const customerIds = matchingCustomers?.map(c => c.id) || [];
-      console.log('Final customer IDs for orders filter:', customerIds);
+      console.log(`Search completed: ${orders.length} orders found, total: ${total}`);
       
-      // Filter by matching customer IDs if any found
-      if (customerIds.length > 0) {
-        query = query.in('customer_id', customerIds);
-      } else {
-        // If no customers found, return empty result
-        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
-      }
+      return { orders, total, totalPages };
     }
 
     if (statusFilter && statusFilter !== 'all') {
