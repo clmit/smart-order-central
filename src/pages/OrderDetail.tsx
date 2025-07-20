@@ -183,6 +183,15 @@ export function OrderDetail() {
     }));
   };
 
+  const handleUpdateItemField = (itemId: string, field: string, value: string | number) => {
+    setOrderItems(orderItems.map(item => {
+      if (item.id === itemId) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    }));
+  };
+
   const handleUpdateItemPhoto = (itemId: string, photoUrl: string) => {
     setOrderItems(orderItems.map(item => {
       if (item.id === itemId) {
@@ -488,19 +497,44 @@ export function OrderDetail() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label>Название</Label>
-                        <div className="font-medium text-lg">{item.name}</div>
+                        {isEditing ? (
+                          <Input
+                            value={item.name}
+                            onChange={(e) => handleUpdateItemField(item.id, 'name', e.target.value)}
+                            placeholder="Название товара"
+                          />
+                        ) : (
+                          <div className="font-medium text-lg">{item.name}</div>
+                        )}
                       </div>
                       <div>
                         <Label>Цена</Label>
-                        <div className="font-medium text-lg">{formatCurrency(item.price)}</div>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => handleUpdateItemField(item.id, 'price', parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                          />
+                        ) : (
+                          <div className="font-medium text-lg">{formatCurrency(item.price)}</div>
+                        )}
                       </div>
                     </div>
                     
                     <div>
                       <Label>Описание</Label>
-                      <div className="text-muted-foreground">
-                        {item.description || 'Описание отсутствует'}
-                      </div>
+                      {isEditing ? (
+                        <Input
+                          value={item.description || ''}
+                          onChange={(e) => handleUpdateItemField(item.id, 'description', e.target.value)}
+                          placeholder="Описание товара"
+                        />
+                      ) : (
+                        <div className="text-muted-foreground">
+                          {item.description || 'Описание отсутствует'}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">
