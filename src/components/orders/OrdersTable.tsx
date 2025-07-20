@@ -1,6 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { FileText, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Order } from '@/types';
@@ -84,17 +84,32 @@ export const OrdersTable = ({ orders, isLoading }: OrdersTableProps) => {
                 <OrderStatusBadge status={order.status} />
               </TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/orders/${order.id}`);
-                  }}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="sr-only">View</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/orders/${order.id}`);
+                    }}
+                    title="Просмотр заказа"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span className="sr-only">Просмотр</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/orders/${order.id}?edit=true`);
+                    }}
+                    title="Редактировать заказ"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Редактировать</span>
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Save, 
@@ -44,6 +44,7 @@ import {
 export function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +69,11 @@ export function OrderDetail() {
           setOrder(orderData);
           setOrderItems(orderData.items);
           setStatus(orderData.status);
+          
+          // Check if edit mode is requested via URL parameter
+          if (searchParams.get('edit') === 'true') {
+            setIsEditing(true);
+          }
         } else {
           toast({
             title: "Ошибка",
@@ -89,7 +95,7 @@ export function OrderDetail() {
     };
 
     loadOrderDetails();
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, searchParams]);
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
@@ -315,7 +321,7 @@ export function OrderDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between bg-card rounded-lg px-6 py-4 border">
+      <div className="flex flex-col lg:flex-row items-center justify-between bg-card rounded-lg px-6 py-4 border">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <h1 className="text-2xl font-bold">Заказ {formatOrderId(order.orderNumber || 0)}</h1>
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${getStatusClass(order.status)}`}>
@@ -323,8 +329,54 @@ export function OrderDetail() {
             {getStatusLabel(order.status)}
           </div>
         </div>
-        <div className="text-muted-foreground mt-2 sm:mt-0">
-          {formatDate(order.date)}
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 lg:mt-0">
+          <div className="text-muted-foreground">
+            {formatDate(order.date)}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/orders')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Назад
+            </Button>
+            {!isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Редактировать
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Отменить
+                </Button>
+                <Button
+                  onClick={handleSaveOrder}
+                  disabled={isSubmitting}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -568,17 +620,6 @@ export function OrderDetail() {
         </CardContent>
       </Card>
 
-      {isEditing && (
-        <div className="flex justify-end gap-4">
-          <Button variant="outline" onClick={() => setIsEditing(false)}>
-            Отменить
-          </Button>
-          <Button onClick={handleSaveOrder} disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            Сохранить заказ
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
