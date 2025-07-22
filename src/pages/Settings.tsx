@@ -15,31 +15,59 @@ export function Settings() {
     });
   };
 
-  const handleTestAPI = () => {
-    // Тестовые данные для создания заказа
-    const testData = {
-      customerName: "Тестовый Клиент",
-      customerPhone: "+7 (999) 123-4567",
-      customerAddress: "Тестовый адрес",
-      customerEmail: "test@example.com",
-      source: "other",
-      date: "2024-01-15T10:30:00Z", // Пример указания даты
-      orderNumber: "CL00999", // Пример указания номера заказа
-      items: [
-        {
-          name: "Тестовый товар",
-          description: "Описание товара",
-          price: 1000,
-          quantity: 1
-        }
-      ]
-    };
-    
-    // Кодируем данные для передачи через URL
-    const encodedData = encodeURIComponent(JSON.stringify(testData));
-    
-    // Открываем страницу создания заказа с тестовыми данными
-    window.location.href = `${apiBaseUrl}/api/orders/create?data=${encodedData}`;
+  const handleTestAPI = async () => {
+    try {
+      // Тестовые данные для создания заказа
+      const testData = {
+        customerName: "Тестовый Клиент",
+        customerPhone: "+7 (999) 123-4567",
+        customerAddress: "Тестовый адрес",
+        customerEmail: "test@example.com",
+        source: "other",
+        date: "2024-01-15T10:30:00Z",
+        orderNumber: "CL00999",
+        items: [
+          {
+            name: "Тестовый товар",
+            description: "Описание товара",
+            price: 1000,
+            quantity: 1
+          }
+        ]
+      };
+      
+      // Отправляем POST запрос на Supabase Edge Function
+      const response = await fetch('https://dzuyeaqwdkpegosfhooz.supabase.co/functions/v1/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6dXllYXF3ZGtwZWdvc2Zob296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MzYxNjEsImV4cCI6MjA2MjQxMjE2MX0.ZWjpNN7kVc7d8D8H4hSYyHlKu2TRSXEK9L172mX49Bg'}`
+        },
+        body: JSON.stringify(testData)
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: `Тестовый заказ создан! ID: ${result.id}`,
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: result.error || "Не удалось создать заказ",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Ошибка при создании заказа",
+        variant: "destructive",
+      });
+      console.error('Error testing API:', error);
+    }
   };
 
   return (
@@ -66,11 +94,11 @@ export function Settings() {
               <div className="space-y-2">
                 <p className="font-medium">Endpoint URL</p>
                 <div className="flex items-center bg-muted p-2 rounded-md">
-                  <code className="text-sm flex-1 break-all">{apiBaseUrl}/api/orders/create</code>
+                  <code className="text-sm flex-1 break-all">https://dzuyeaqwdkpegosfhooz.supabase.co/functions/v1/create-order</code>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => handleCopy(`${apiBaseUrl}/api/orders/create`, 'URL скопирован')}
+                    onClick={() => handleCopy('https://dzuyeaqwdkpegosfhooz.supabase.co/functions/v1/create-order', 'URL скопирован')}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -79,7 +107,15 @@ export function Settings() {
               
               <div className="space-y-2">
                 <p className="font-medium">Метод</p>
-                <p className="bg-muted p-2 rounded-md">GET (с параметром data)</p>
+                <p className="bg-muted p-2 rounded-md">POST</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-medium">Заголовки</p>
+                <pre className="bg-muted p-2 rounded-md text-sm whitespace-pre-wrap">
+                  {`Content-Type: application/json
+Authorization: Bearer YOUR_SUPABASE_ANON_KEY`}
+                </pre>
               </div>
 
               <div className="space-y-2">
@@ -175,11 +211,22 @@ const orderData = {
   ]
 };
 
-// Кодируем данные для передачи через URL
-const encodedData = encodeURIComponent(JSON.stringify(orderData));
+// Отправляем POST запрос
+const response = await fetch('https://dzuyeaqwdkpegosfhooz.supabase.co/functions/v1/create-order', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_SUPABASE_ANON_KEY'
+  },
+  body: JSON.stringify(orderData)
+});
 
-// Перенаправляем пользователя на страницу создания заказа
-window.location.href = "${apiBaseUrl}/api/orders/create?data=" + encodedData;`}
+const result = await response.json();
+if (response.ok) {
+  console.log('Заказ создан:', result);
+} else {
+  console.error('Ошибка:', result.error);
+}`}
                 </pre>
               </div>
               
