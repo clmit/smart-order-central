@@ -129,11 +129,11 @@ Authorization: Bearer YOUR_SUPABASE_ANON_KEY`}
   "source": "website", // website, phone, store, referral, other
   "date": "2024-01-15T10:30:00Z", // необязательно, ISO формат
   "orderNumber": "CL00001", // необязательно, формат CL00001
-  "items": [ // обязательно
+  "items": [ // необязательно
     {
-      "name": "Название товара", // обязательно
+      "name": "Название товара", // обязательно если есть items
       "description": "Описание товара",
-      "price": 1000, // обязательно
+      "price": 1000, // обязательно если есть items
       "quantity": 1,
       "photoUrl": "https://example.com/photo.jpg"
     }
@@ -149,7 +149,7 @@ Authorization: Bearer YOUR_SUPABASE_ANON_KEY`}
                   <p><strong>orderNumber</strong> - Номер заказа в формате CL00001 (например, "CL00001", "CL00999"). Поле необязательное - если не указано, будет автоматически назначен следующий доступный номер.</p>
                   <p><strong>source</strong> - Источник заказа: website, phone, store, referral, other</p>
                   <p><strong>customerName, customerPhone</strong> - Обязательные поля</p>
-                  <p><strong>items</strong> - Массив товаров, обязательно должен содержать хотя бы один товар</p>
+                  <p><strong>items</strong> - Массив товаров, необязательное поле. Если указано, каждый товар должен содержать name и price</p>
                 </div>
               </div>
 

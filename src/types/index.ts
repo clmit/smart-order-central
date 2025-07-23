@@ -60,7 +60,7 @@ export interface ExternalOrderData {
   source?: OrderSource;
   date?: string; // Поле для даты заказа
   orderNumber?: string; // Новое поле для номера заказа (CL00001)
-  items: {
+  items?: {
     name: string;
     description?: string;
     price: number;

@@ -41,8 +41,16 @@ serve(async (req) => {
     // Validate required fields
     const { customerName, customerPhone, items } = requestData
     
-    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
-      return new Response(JSON.stringify({ error: 'Missing required fields', data: requestData }), {
+    if (!customerName || !customerPhone) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: customerName and customerPhone are required', data: requestData }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    // Validate items if provided
+    if (items && (!Array.isArray(items) || items.some(item => !item.name || item.price === undefined))) {
+      return new Response(JSON.stringify({ error: 'Invalid items format: each item must have name and price', data: requestData }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -97,7 +105,7 @@ serve(async (req) => {
     }
     
     // Calculate total amount
-    const totalAmount = requestData.items.reduce(
+    const totalAmount = (requestData.items || []).reduce(
       (sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)),
       0
     )
@@ -177,28 +185,35 @@ serve(async (req) => {
     
     console.log('Order created:', order.id)
     
-    // Create order items
-    const orderItems = requestData.items.map((item) => ({
-      order_id: order.id,
-      name: item.name,
-      description: item.description || null,
-      price: Number(item.price) || 0,
-      quantity: Number(item.quantity) || 1,
-      photo_url: item.photoUrl || null
-    }))
-    
-    console.log('Creating order items:', orderItems.length)
-    const { data: orderItemsData, error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems)
-      .select()
-    
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError)
-      return new Response(JSON.stringify({ error: 'Failed to create order items', details: itemsError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    // Create order items (if provided)
+    let orderItemsData = []
+    if (requestData.items && requestData.items.length > 0) {
+      const orderItems = requestData.items.map((item) => ({
+        order_id: order.id,
+        name: item.name,
+        description: item.description || null,
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        photo_url: item.photoUrl || null
+      }))
+      
+      console.log('Creating order items:', orderItems.length)
+      const { data: itemsResult, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+        .select()
+      
+      if (itemsError) {
+        console.error('Error creating order items:', itemsError)
+        return new Response(JSON.stringify({ error: 'Failed to create order items', details: itemsError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      
+      orderItemsData = itemsResult
+    } else {
+      console.log('No items provided, creating order without items')
     }
     
     // Update customer metrics
