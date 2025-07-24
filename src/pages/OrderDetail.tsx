@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Plus,
   Edit,
-  X
+  X,
+  User
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ export function OrderDetail() {
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemPhoto, setNewItemPhoto] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [orderNumber, setOrderNumber] = useState<number>(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export function OrderDetail() {
           setOrder(orderData);
           setOrderItems(orderData.items);
           setStatus(orderData.status);
+          setOrderNumber(orderData.orderNumber || 0);
           
           // Check if edit mode is requested via URL parameter
           if (searchParams.get('edit') === 'true') {
@@ -115,7 +118,8 @@ export function OrderDetail() {
       const updatedOrder = await updateOrder(order.id, {
         status: status as any,
         items: orderItems,
-        totalAmount
+        totalAmount,
+        orderNumber
       });
 
       if (updatedOrder) {
@@ -395,24 +399,36 @@ export function OrderDetail() {
             <CardTitle>Информация о клиенте</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Имя</Label>
-              <div className="font-medium">{order.customer?.name || 'Не указано'}</div>
-            </div>
-            <div>
-              <Label>Телефон</Label>
-              <div className="font-medium">{order.customer?.phone || 'Не указано'}</div>
-            </div>
-            <div>
-              <Label>Адрес</Label>
-              <div className="font-medium">{order.customer?.address || 'Не указано'}</div>
-            </div>
-            {order.customer?.email && (
-              <div>
-                <Label>Email</Label>
-                <div className="font-medium">{order.customer.email}</div>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div>
+                  <Label>Имя</Label>
+                  <div className="font-medium">{order.customer?.name || 'Не указано'}</div>
+                </div>
+                <div className="mt-2">
+                  <Label>Телефон</Label>
+                  <div className="font-medium">{order.customer?.phone || 'Не указано'}</div>
+                </div>
+                <div className="mt-2">
+                  <Label>Адрес</Label>
+                  <div className="font-medium">{order.customer?.address || 'Не указано'}</div>
+                </div>
+                {order.customer?.email && (
+                  <div className="mt-2">
+                    <Label>Email</Label>
+                    <div className="font-medium">{order.customer.email}</div>
+                  </div>
+                )}
               </div>
-            )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate(`/customers/${order.customerId}`)}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Профиль клиента
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -421,6 +437,20 @@ export function OrderDetail() {
             <CardTitle>Информация о заказе</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label>Номер заказа</Label>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(parseInt(e.target.value) || 0)}
+                  placeholder="Номер заказа"
+                  className="mt-1"
+                />
+              ) : (
+                <div className="font-medium">{formatOrderId(orderNumber)}</div>
+              )}
+            </div>
             <div>
               <Label>Источник заказа</Label>
               <div className="font-medium">{getSourceLabel(order.source)}</div>
