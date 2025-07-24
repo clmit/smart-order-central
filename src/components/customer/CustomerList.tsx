@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, PhoneCall, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Customer } from '@/types';
@@ -28,6 +29,7 @@ export function CustomerList({
   onEditCustomer,
   isLoading
 }: CustomerListProps) {
+  const navigate = useNavigate();
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
@@ -103,7 +105,12 @@ export function CustomerList({
                 className="border-b hover:bg-muted/50"
               >
                 <td className="py-3">
-                  <div className="font-medium">{customer.name}</div>
+                  <div 
+                    className="font-medium cursor-pointer hover:text-primary hover:underline"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
+                    {customer.name}
+                  </div>
                   <div className="text-sm text-muted-foreground">ID: {customer.id.substring(0, 6)}</div>
                 </td>
                 <td className="py-3">
