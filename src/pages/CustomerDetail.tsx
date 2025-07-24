@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getCustomerById, updateCustomer, getOrders } from '@/lib/api';
+import { getCustomerById, updateCustomer, getOrdersPaginated } from '@/lib/api';
 import { Customer, Order } from '@/types';
 import { formatOrderId } from '@/lib/orderUtils';
 
@@ -46,10 +46,9 @@ export function CustomerDetail() {
             address: customerData.address || ''
           });
           
-          // Load customer's orders
-          const orders = await getOrders();
-          const customerOrders = orders.filter(order => order.customerId === id);
-          setCustomerOrders(customerOrders);
+          // Load customer's orders using the same method as Orders page
+          const ordersResult = await getOrdersPaginated(1, 1000, customerData.phone);
+          setCustomerOrders(ordersResult.orders);
         } else {
           toast({
             title: "Ошибка",
