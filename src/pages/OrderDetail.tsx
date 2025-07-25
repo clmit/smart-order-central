@@ -73,6 +73,8 @@ export function OrderDetail() {
           setStatus(orderData.status);
           setOrderNumber(orderData.orderNumber || 0);
           
+          console.log('Order loaded with items:', orderData.items);
+          
           // Check if edit mode is requested via URL parameter
           if (searchParams.get('edit') === 'true') {
             setIsEditing(true);
@@ -99,6 +101,13 @@ export function OrderDetail() {
 
     loadOrderDetails();
   }, [id, navigate, toast, searchParams]);
+
+  // Debug useEffect to track orderItems changes
+  useEffect(() => {
+    console.log('=== ORDER ITEMS STATE CHANGED ===');
+    console.log('Current orderItems state:', orderItems);
+    console.log('Number of items in state:', orderItems.length);
+  }, [orderItems]);
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
@@ -176,9 +185,10 @@ export function OrderDetail() {
     console.log('New item:', newItem);
     console.log('Current items before add:', orderItems);
 
-    setOrderItems([...orderItems, newItem]);
+    const updatedItems = [...orderItems, newItem];
+    setOrderItems(updatedItems);
     
-    console.log('Items after add should be:', [...orderItems, newItem]);
+    console.log('Items after add should be:', updatedItems);
     
     // Reset fields
     setNewItemName('');
