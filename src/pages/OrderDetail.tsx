@@ -687,13 +687,18 @@ export function OrderDetail() {
                         />
                       </div>
                       
-                      <Button
-                        variant="outline"
-                        onClick={handleAddItem}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Добавить товар
-                      </Button>
+                       <Button
+                         variant="outline"
+                         type="button"
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           handleAddItem();
+                         }}
+                       >
+                         <Plus className="h-4 w-4 mr-2" />
+                         Добавить товар
+                       </Button>
                     </div>
                   </div>
                 </div>
