@@ -391,6 +391,10 @@ export const createOrder = async (orderData: Omit<Order, 'id'>): Promise<Order> 
 
 export const updateOrder = async (id: string, orderData: Partial<Order>): Promise<Order | undefined> => {
   try {
+    console.log('=== UPDATE ORDER API ===');
+    console.log('Order ID:', id);
+    console.log('Order data received:', orderData);
+    
     const updateData: any = {};
     
     if (orderData.customerId) updateData.customer_id = orderData.customerId;
@@ -401,10 +405,15 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
     
     // If items are being updated, recalculate total
     if (orderData.items) {
+      console.log('Items to save:', orderData.items);
+      console.log('Number of items to save:', orderData.items.length);
+      
       updateData.total_amount = orderData.items.reduce(
         (sum, item) => sum + (item.price * item.quantity),
         0
       );
+      
+      console.log('Calculated total amount:', updateData.total_amount);
       
       // First delete existing items
       const { error: deleteError } = await supabase
@@ -424,9 +433,14 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
         photo_url: item.photoUrl || null
       }));
       
-      const { error: insertError } = await supabase
+      console.log('Prepared items for insert:', orderItems);
+      
+      const { data: insertedItems, error: insertError } = await supabase
         .from('order_items')
-        .insert(orderItems);
+        .insert(orderItems)
+        .select();
+      
+      console.log('Insert result:', { insertedItems, insertError });
       
       if (insertError) throw insertError;
     }

@@ -109,11 +109,17 @@ export function OrderDetail() {
 
     setIsSubmitting(true);
     try {
+      console.log('=== SAVING ORDER ===');
+      console.log('Order items before save:', orderItems);
+      console.log('Number of items:', orderItems.length);
+      
       // Calculate total
       const totalAmount = orderItems.reduce(
         (sum, item) => sum + (item.price * item.quantity),
         0
       );
+
+      console.log('Total amount calculated:', totalAmount);
 
       const updatedOrder = await updateOrder(order.id, {
         status: status as any,
@@ -121,6 +127,8 @@ export function OrderDetail() {
         totalAmount,
         orderNumber
       });
+
+      console.log('Updated order received:', updatedOrder);
 
       if (updatedOrder) {
         setOrder(updatedOrder);
@@ -164,7 +172,13 @@ export function OrderDetail() {
       photoUrl: newItemPhoto || undefined
     };
 
+    console.log('=== ADDING NEW ITEM ===');
+    console.log('New item:', newItem);
+    console.log('Current items before add:', orderItems);
+
     setOrderItems([...orderItems, newItem]);
+    
+    console.log('Items after add should be:', [...orderItems, newItem]);
     
     // Reset fields
     setNewItemName('');
