@@ -160,7 +160,11 @@ export function OrderDetail() {
   };
 
   const handleAddItem = () => {
+    console.log('=== HANDLE ADD ITEM CALLED ===');
+    console.log('Fields:', { newItemName, newItemPrice, newItemDescription, newItemQuantity });
+    
     if (!newItemName || !newItemPrice) {
+      console.log('Validation failed - empty fields');
       toast({
         title: "Не заполнены поля",
         description: "Заполните название и цену товара",
