@@ -397,6 +397,7 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
     if (orderData.date) updateData.date = orderData.date;
     if (orderData.source) updateData.source = orderData.source;
     if (orderData.status) updateData.status = orderData.status;
+    if (orderData.orderNumber !== undefined) updateData.order_number = orderData.orderNumber;
     
     // If items are being updated, recalculate total
     if (orderData.items) {
