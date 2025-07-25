@@ -211,12 +211,17 @@ export const getOrders = async (): Promise<Order[]> => {
 
 export const getOrderById = async (id: string): Promise<Order | undefined> => {
   try {
+    console.log('=== GET ORDER BY ID ===');
+    console.log('Fetching order with ID:', id);
+    
     // Get the order
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*')
       .eq('id', id)
       .maybeSingle();
+    
+    console.log('Order query result:', { order, orderError });
     
     if (orderError) throw orderError;
     if (!order) return undefined;
@@ -228,6 +233,8 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
       .eq('id', order.customer_id)
       .maybeSingle();
     
+    console.log('Customer query result:', { customer, customerError });
+    
     if (customerError) throw customerError;
     
     // Get order items
@@ -236,9 +243,12 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
       .select('*')
       .eq('order_id', id);
     
+    console.log('Order items query result:', { items, itemsError });
+    console.log('Number of items found:', items?.length || 0);
+    
     if (itemsError) throw itemsError;
     
-    const orderItems = items.map(item => ({
+    const orderItems = (items || []).map(item => ({
       id: item.id,
       name: item.name,
       description: item.description || undefined,
@@ -246,6 +256,8 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
       quantity: item.quantity,
       photoUrl: item.photo_url || undefined
     }));
+    
+    console.log('Processed order items:', orderItems);
     
     return {
       id: order.id,
