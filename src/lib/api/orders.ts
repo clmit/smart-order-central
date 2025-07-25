@@ -418,10 +418,10 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
       const orderItems = orderData.items.map(item => ({
         order_id: id,
         name: item.name,
-        description: item.description,
+        description: item.description || null,
         price: item.price,
         quantity: item.quantity,
-        photo_url: item.photoUrl
+        photo_url: item.photoUrl || null
       }));
       
       const { error: insertError } = await supabase
