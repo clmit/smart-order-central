@@ -121,6 +121,8 @@ export function OrderDetail() {
       console.log('=== SAVING ORDER ===');
       console.log('Order items before save:', orderItems);
       console.log('Number of items:', orderItems.length);
+      console.log('Current orderNumber state:', orderNumber);
+      console.log('Original order.orderNumber:', order.orderNumber);
       
       // Calculate total
       const totalAmount = orderItems.reduce(
@@ -130,12 +132,16 @@ export function OrderDetail() {
 
       console.log('Total amount calculated:', totalAmount);
 
-      const updatedOrder = await updateOrder(order.id, {
+      const updateData = {
         status: status as any,
         items: orderItems,
         totalAmount,
         orderNumber
-      });
+      };
+      
+      console.log('Data being sent to updateOrder:', updateData);
+
+      const updatedOrder = await updateOrder(order.id, updateData);
 
       console.log('Updated order received:', updatedOrder);
 
