@@ -57,11 +57,11 @@ export const sendSms = async (phoneNumbers: string[], message: string): Promise<
     }
   }
   
-  // Corrected success indicator - only consider it a success if all messages were sent
-  const allSuccessful = failedCount === 0 && sentCount > 0;
+  // Success indicator - if at least one message was sent successfully
+  const hasSuccessfulSends = sentCount > 0;
   
   return {
-    success: allSuccessful,
+    success: hasSuccessfulSends,
     sent: sentCount,
     failed: failedCount
   };
