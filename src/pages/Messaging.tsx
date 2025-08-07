@@ -129,9 +129,12 @@ export function Messaging() {
     setShowConfirmDialog(false);
 
     try {
+      console.log('Начинаем отправку SMS для:', selectedCustomers);
       const result = await sendSms(selectedCustomers, message);
+      console.log('Результат отправки SMS:', result);
       
       if (result.success) {
+        console.log('Показываем сообщение об успехе');
         toast({
           title: "Сообщения отправлены",
           description: `Успешно отправлено: ${result.sent} сообщений`,
@@ -139,12 +142,14 @@ export function Messaging() {
         });
         setMessage('');
       } else if (result.sent > 0 && result.failed > 0) {
+        console.log('Показываем сообщение о частичной отправке');
         toast({
           title: "Часть сообщений отправлена",
           description: `Отправлено: ${result.sent}, не доставлено: ${result.failed}`,
           variant: "default"
         });
       } else {
+        console.log('Показываем сообщение об ошибке, result:', result);
         toast({
           title: "Ошибка отправки",
           description: `Не удалось отправить сообщения: не доставлено ${result.failed}`,

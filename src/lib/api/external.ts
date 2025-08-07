@@ -35,11 +35,13 @@ export const sendSms = async (phoneNumbers: string[], message: string): Promise<
       }
       
       const data = await response.json();
+      console.log(`SMS API response for ${phone}:`, data);
       
       // Fix: Only consider it a failure if the overall API status is not "OK"
       // or if the specific SMS status is not "OK"
       if (data.status === "OK") {
         const smsStatus = data.sms[formattedPhone]?.status;
+        console.log(`SMS status for ${phone} (${formattedPhone}):`, smsStatus);
         if (smsStatus === "OK") {
           sentCount++;
           console.log(`Successfully sent SMS to ${phone}`);
@@ -57,8 +59,10 @@ export const sendSms = async (phoneNumbers: string[], message: string): Promise<
     }
   }
   
+  console.log(`SMS sending complete. Sent: ${sentCount}, Failed: ${failedCount}`);
   // Success indicator - if at least one message was sent successfully
   const hasSuccessfulSends = sentCount > 0;
+  console.log(`Has successful sends: ${hasSuccessfulSends}`);
   
   return {
     success: hasSuccessfulSends,
