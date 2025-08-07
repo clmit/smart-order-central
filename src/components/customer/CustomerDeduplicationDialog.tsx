@@ -164,6 +164,12 @@ export function CustomerDeduplicationDialog({
                       <div>
                         <div className="text-sm font-medium mb-2">Будет обновлено:</div>
                         <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm space-y-1">
+                          {group.proposedChanges.primaryCustomerUpdates.name && (
+                            <div>• Имя: {group.primaryCustomer.name} → {group.proposedChanges.primaryCustomerUpdates.name}</div>
+                          )}
+                          {group.proposedChanges.primaryCustomerUpdates.phone && (
+                            <div>• Телефон: {formatPhone(group.primaryCustomer.phone)} → {formatPhone(group.proposedChanges.primaryCustomerUpdates.phone)}</div>
+                          )}
                           {group.proposedChanges.primaryCustomerUpdates.address && (
                             <div>• Адрес: {group.proposedChanges.primaryCustomerUpdates.address}</div>
                           )}
