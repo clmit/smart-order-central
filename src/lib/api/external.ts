@@ -3,72 +3,42 @@ import { Order } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { createOrder } from './orders';
 
-// Real API for SMS messaging using SMS.ru
+// SMS sending via Supabase Edge Function
 export const sendSms = async (phoneNumbers: string[], message: string): Promise<{ success: boolean, sent: number, failed: number }> => {
   console.log(`Sending SMS to ${phoneNumbers.length} recipients: "${message}"`);
   
-  let sentCount = 0;
-  let failedCount = 0;
-  
-  // Process each phone number individually
-  for (const phone of phoneNumbers) {
-    try {
-      // Format the phone number: remove any non-digit characters and ensure it starts with 7
-      let formattedPhone = phone.replace(/\D/g, '');
-      if (formattedPhone.startsWith('8')) {
-        formattedPhone = '7' + formattedPhone.substring(1);
-      } else if (!formattedPhone.startsWith('7')) {
-        formattedPhone = '7' + formattedPhone;
-      }
-      
-      // URL encode the message
-      const encodedMessage = encodeURIComponent(message);
-      
-      // Make API request to SMS.ru
-      const response = await fetch(
-        `https://sms.ru/sms/send?api_id=460979D6-5A0D-B421-DD96-47CFD391B63E&to=${formattedPhone}&msg=${encodedMessage}&json=1`, 
-        { method: 'GET' }
-      );
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log(`SMS API response for ${phone}:`, data);
-      
-      // Fix: Only consider it a failure if the overall API status is not "OK"
-      // or if the specific SMS status is not "OK"
-      if (data.status === "OK") {
-        const smsStatus = data.sms[formattedPhone]?.status;
-        console.log(`SMS status for ${phone} (${formattedPhone}):`, smsStatus);
-        if (smsStatus === "OK") {
-          sentCount++;
-          console.log(`Successfully sent SMS to ${phone}`);
-        } else {
-          failedCount++;
-          console.error(`Failed to send SMS to ${phone}:`, data.sms[formattedPhone]?.status_text);
-        }
-      } else {
-        failedCount++;
-        console.error(`SMS.ru API error:`, data.status_text);
-      }
-    } catch (error) {
-      failedCount++;
-      console.error(`Error sending SMS to ${phone}:`, error);
+  try {
+    const response = await fetch('https://dzuyeaqwdkpegosfhooz.supabase.co/functions/v1/send-sms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phoneNumbers,
+        message
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
+
+    const result = await response.json();
+    console.log('SMS function result:', result);
+    
+    return {
+      success: result.success || false,
+      sent: result.sent || 0,
+      failed: result.failed || 0
+    };
+  } catch (error) {
+    console.error('Error calling SMS function:', error);
+    return {
+      success: false,
+      sent: 0,
+      failed: 1
+    };
   }
-  
-  console.log(`SMS sending complete. Sent: ${sentCount}, Failed: ${failedCount}`);
-  // Success indicator - if at least one message was sent successfully
-  const hasSuccessfulSends = sentCount > 0;
-  console.log(`Has successful sends: ${hasSuccessfulSends}`);
-  
-  return {
-    success: hasSuccessfulSends,
-    sent: sentCount,
-    failed: failedCount
-  };
 };
 
 // API endpoint for external order creation via Edge Function
