@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Save, X, Phone, Mail, MapPin, Calendar, ShoppingBag, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, Save, X, Phone, Mail, MapPin, Calendar, ShoppingBag, DollarSign, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,6 +71,12 @@ export function CustomerDetail() {
 
     loadCustomerData();
   }, [id, navigate, toast]);
+
+  const handleSendSms = () => {
+    if (customer) {
+      navigate(`/messaging?phone=${encodeURIComponent(customer.phone)}`);
+    }
+  };
 
   const handleSaveCustomer = async () => {
     if (!customer || !id) return;
@@ -176,6 +182,10 @@ export function CustomerDetail() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Назад
           </Button>
+          <Button variant="outline" onClick={handleSendSms}>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Отправить SMS
+          </Button>
           {!isEditing ? (
             <Button variant="outline" onClick={() => setIsEditing(true)}>
               <Edit className="h-4 w-4 mr-2" />
@@ -239,9 +249,19 @@ export function CustomerDetail() {
                     placeholder="Номер телефона"
                   />
                 ) : (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{customer.phone}</span>
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{customer.phone}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSendSms}
+                      className="ml-2"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
