@@ -32,6 +32,29 @@ const normalizePhoneNumber = (phone: string): string => {
   return digitsOnly;
 };
 
+// Форматирование номера телефона в формат 8900...
+const formatPhoneFor8Format = (phone: string): string => {
+  // Убираем все нецифровые символы
+  const digitsOnly = phone.replace(/[^0-9]/g, '');
+  
+  // Заменяем 7 на 8 в начале (российские номера)
+  if (digitsOnly.startsWith('7') && digitsOnly.length === 11) {
+    return '8' + digitsOnly.slice(1);
+  }
+  
+  // Добавляем 8 если номер начинается с 9 и имеет 10 цифр
+  if (digitsOnly.startsWith('9') && digitsOnly.length === 10) {
+    return '8' + digitsOnly;
+  }
+  
+  // Если уже начинается с 8, возвращаем как есть
+  if (digitsOnly.startsWith('8') && digitsOnly.length === 11) {
+    return digitsOnly;
+  }
+  
+  return phone; // Возвращаем оригинал если не удалось обработать
+};
+
 // Получение заказов клиента
 const getCustomerOrdersCount = async (customerId: string): Promise<number> => {
   const { data, error } = await supabase
@@ -114,6 +137,20 @@ export const findDuplicateCustomers = async (): Promise<DuplicateGroup[]> => {
           }
         }
         
+        // Обрабатываем имя: если основной клиент - "Неизвестный клиент", ищем лучшее имя
+        if (primaryCustomer.name === 'Неизвестный клиент') {
+          const customerWithRealName = duplicateCustomers.find(c => c.name && c.name !== 'Неизвестный клиент');
+          if (customerWithRealName?.name) {
+            primaryCustomerUpdates.name = customerWithRealName.name;
+          }
+        }
+        
+        // Форматируем номер телефона в формат 8900...
+        const formattedPhone = formatPhoneFor8Format(primaryCustomer.phone);
+        if (formattedPhone !== primaryCustomer.phone) {
+          primaryCustomerUpdates.phone = formattedPhone;
+        }
+        
         // Обновляем количество заказов и общую сумму
         if (totalOrdersToTransfer > 0) {
           primaryCustomerUpdates.totalOrders = primaryCustomer.totalOrders + totalOrdersToTransfer;
@@ -175,6 +212,12 @@ export const executeDuplication = async (duplicateGroups: DuplicateGroup[]): Pro
         }
         if (proposedChanges.primaryCustomerUpdates.totalSpent !== undefined) {
           updateData.total_spent = proposedChanges.primaryCustomerUpdates.totalSpent;
+        }
+        if (proposedChanges.primaryCustomerUpdates.name) {
+          updateData.name = proposedChanges.primaryCustomerUpdates.name;
+        }
+        if (proposedChanges.primaryCustomerUpdates.phone) {
+          updateData.phone = proposedChanges.primaryCustomerUpdates.phone;
         }
         
         await supabase
