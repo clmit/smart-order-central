@@ -1,12 +1,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy } from 'lucide-react';
+import { Copy, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CustomerDeduplicationDialog } from '@/components/customer/CustomerDeduplicationDialog';
+import { useState } from 'react';
 
 export function Settings() {
   const apiBaseUrl = window.location.origin;
+  const [deduplicationDialogOpen, setDeduplicationDialogOpen] = useState(false);
 
   const handleCopy = (text: string, message: string) => {
     navigator.clipboard.writeText(text);
@@ -246,12 +249,50 @@ if (response.ok) {
                 Общие настройки системы
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p>Раздел в разработке</p>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium mb-2">Управление клиентами</h3>
+                  <div className="space-y-3">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Users className="h-4 w-4" />
+                            <span className="font-medium">Дедупликация клиентов</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Поиск и объединение клиентов с одинаковыми номерами телефонов в разных форматах 
+                            (например, "8900..." и "+7 900..."). Функция найдет дубликаты, объединит данные 
+                            и удалит повторные записи.
+                          </p>
+                          <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                            ⚠️ Операция необратима. Перед выполнением будет показан предварительный просмотр изменений.
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => setDeduplicationDialogOpen(true)}
+                          className="ml-4"
+                        >
+                          Найти дубликаты
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <CustomerDeduplicationDialog 
+        open={deduplicationDialogOpen}
+        onOpenChange={setDeduplicationDialogOpen}
+        onComplete={() => {
+          // Можно добавить обновление данных при необходимости
+        }}
+      />
     </div>
   );
 }

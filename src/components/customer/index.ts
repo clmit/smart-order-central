@@ -4,3 +4,4 @@ export * from './CustomerList';
 export * from './CustomerEditDialog';
 export * from './CustomerActions';
 export * from './CustomerFilters';
+export * from './CustomerDeduplicationDialog';
